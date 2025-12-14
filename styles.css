@@ -1080,4 +1080,42 @@ input:checked + .slider:before {
     background-color: rgba(74, 107, 220, 0.1);
     border-color: var(--primary-color);
     color: var(--primary-color);
+}
+
+/* 播放方向按钮样式 */
+.direction-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.direction-btn {
+    flex: 1;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.direction-btn:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(74, 107, 220, 0.05);
+}
+
+.direction-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.direction-btn i {
+    font-size: 1rem;
 } 

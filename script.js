@@ -1145,6 +1145,7 @@ let intervalTrainingState = {
     currentNote2: null,
     currentIntervalType: null,
     isWaiting: false,
+    playDirection: 'ascending', // 'ascending', 'descending', 'random'
     stats: {
         total: 0,
         correct: 0,
@@ -1169,6 +1170,11 @@ function initIntervalTraining() {
     // 音程范围选择
     document.getElementById('selectAllIntervals').addEventListener('click', selectAllIntervalRanges);
     document.getElementById('deselectAllIntervals').addEventListener('click', deselectAllIntervalRanges);
+
+    // 播放方向按钮
+    document.getElementById('ascendingBtn').addEventListener('click', (e) => setPlayDirection('ascending', e.target.closest('button')));
+    document.getElementById('descendingBtn').addEventListener('click', (e) => setPlayDirection('descending', e.target.closest('button')));
+    document.getElementById('randomDirectionBtn').addEventListener('click', (e) => setPlayDirection('random', e.target.closest('button')));
 
     // 音程选择按钮
     document.querySelectorAll('.interval-option-btn').forEach(btn => {
@@ -1264,12 +1270,30 @@ function playIntervalButtonClick() {
     intervalTrainingState.currentNote2 = note2;
     intervalTrainingState.currentIntervalType = intervalType;
 
+    // 根据方向选择播放顺序
+    let playNote1 = startNote;
+    let playNote2 = note2;
+
+    const direction = intervalTrainingState.playDirection;
+    if (direction === 'descending') {
+        // 下行：先播放高音，后播放低音
+        playNote1 = note2;
+        playNote2 = startNote;
+    } else if (direction === 'random') {
+        // 随机：随机选择顺序
+        if (Math.random() > 0.5) {
+            [playNote1, playNote2] = [playNote2, playNote1];
+        }
+    }
+    // ascending 的情况保持不变
+
     // 播放音程
-    playInterval(startNote, note2, level, sequential);
+    playInterval(playNote1, playNote2, level, sequential);
 
     // 更新显示
     const intervalName = intervalDefinitions[intervalType].name;
-    document.getElementById('intervalPlayingContent').textContent = `${startNote} - ${note2} (${intervalName})`;
+    const directionText = direction === 'ascending' ? '(上行)' : (direction === 'descending' ? '(下行)' : '(随机)');
+    document.getElementById('intervalPlayingContent').textContent = `${startNote} - ${note2} ${directionText} ${intervalName}`;
 
     showIntervalStatus(`播放音程: ${startNote} 到 ${note2}`, 'success');
 }
@@ -1492,6 +1516,17 @@ function getSelectedIntervalRanges() {
         selectedIntervals.push(checkbox.value);
     });
     return selectedIntervals;
+}
+
+// 设置播放方向
+function setPlayDirection(direction, buttonElement) {
+    intervalTrainingState.playDirection = direction;
+
+    // 更新按钮样式
+    document.querySelectorAll('.direction-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    buttonElement.classList.add('active');
 }
 
 // 全选所有音程范围

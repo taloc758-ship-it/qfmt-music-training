@@ -373,6 +373,21 @@
                         </div>
 
                         <div class="form-group">
+                            <label>播放方向</label>
+                            <div class="direction-buttons">
+                                <button id="ascendingBtn" class="direction-btn active" data-direction="ascending">
+                                    <i class="fas fa-arrow-up"></i> 上行
+                                </button>
+                                <button id="descendingBtn" class="direction-btn" data-direction="descending">
+                                    <i class="fas fa-arrow-down"></i> 下行
+                                </button>
+                                <button id="randomDirectionBtn" class="direction-btn" data-direction="random">
+                                    <i class="fas fa-random"></i> 随机
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label>训练范围</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item">
@@ -453,6 +468,7 @@
                     </div>
 
                     <div class="panel-section">
+                        <h2>播放控制</h2>
                         <div class="buttons-container">
                             <div class="button-row">
                                 <button id="playIntervalButton" class="btn primary">
