@@ -1017,4 +1017,67 @@ input:checked + .slider:before {
     .tab-btn i {
         display: none;
     }
+}
+
+/* 音程范围选择框样式 */
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-item:hover {
+    color: var(--primary-color);
+}
+
+.range-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.range-btn {
+    flex: 1;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--light-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.range-btn:hover {
+    background-color: rgba(74, 107, 220, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 } 

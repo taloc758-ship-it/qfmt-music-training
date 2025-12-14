@@ -1166,6 +1166,10 @@ function initIntervalTraining() {
     document.getElementById('generateIntervalsButton').addEventListener('click', generateIntervalsButtonClick);
     document.getElementById('resetStatsButton').addEventListener('click', resetStatsButtonClick);
 
+    // 音程范围选择
+    document.getElementById('selectAllIntervals').addEventListener('click', selectAllIntervalRanges);
+    document.getElementById('deselectAllIntervals').addEventListener('click', deselectAllIntervalRanges);
+
     // 音程选择按钮
     document.querySelectorAll('.interval-option-btn').forEach(btn => {
         btn.addEventListener('click', handleIntervalOptionClick);
@@ -1272,8 +1276,14 @@ function playIntervalButtonClick() {
 
 // 随机音程按钮点击
 function randomIntervalButtonClick() {
-    const allIntervals = Object.keys(intervalDefinitions);
-    const randomInterval = allIntervals[Math.floor(Math.random() * allIntervals.length)];
+    // 获取选中的音程范围
+    const selectedIntervals = getSelectedIntervalRanges();
+    if (selectedIntervals.length === 0) {
+        showIntervalStatus('请至少选择一个音程范围！', 'error');
+        return;
+    }
+
+    const randomInterval = selectedIntervals[Math.floor(Math.random() * selectedIntervals.length)];
     const allNotes = ['1', '2', '3', '4', '5', '6', '7'];
     const randomNote = allNotes[Math.floor(Math.random() * allNotes.length)];
 
@@ -1334,10 +1344,22 @@ function generateIntervalsButtonClick() {
     const level = parseInt(document.getElementById('intervalLevel').value) || 4;
     const tbody = document.querySelector('#generatedIntervalsTable tbody');
 
+    // 获取选中的音程范围
+    const selectedIntervals = getSelectedIntervalRanges();
+    if (selectedIntervals.length === 0) {
+        showIntervalStatus('请至少选择一个音程范围！', 'error');
+        return;
+    }
+
     tbody.innerHTML = '';
 
     const intervals = [];
     for (const [key, value] of Object.entries(intervalDefinitions)) {
+        // 只处理选中的音程
+        if (!selectedIntervals.includes(key)) {
+            continue;
+        }
+
         const semitones = value.semitones;
         let note1Pos = notePositions[startNote];
         let note2Pos = (note1Pos + semitones) % 12;
@@ -1460,6 +1482,33 @@ function loadIntervalStats() {
         intervalTrainingState.stats = JSON.parse(saved);
         updateIntervalStats();
     }
+}
+
+// 获取选中的音程范围
+function getSelectedIntervalRanges() {
+    const checkboxes = document.querySelectorAll('.interval-range-checkbox:checked');
+    const selectedIntervals = [];
+    checkboxes.forEach(checkbox => {
+        selectedIntervals.push(checkbox.value);
+    });
+    return selectedIntervals;
+}
+
+// 全选所有音程范围
+function selectAllIntervalRanges() {
+    document.querySelectorAll('.interval-range-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    showIntervalStatus('已全选所有音程', 'success');
+}
+
+// 反选所有音程范围
+function deselectAllIntervalRanges() {
+    document.querySelectorAll('.interval-range-checkbox').forEach(checkbox => {
+        checkbox.checked = !checkbox.checked;
+    });
+    const selected = getSelectedIntervalRanges().length;
+    showIntervalStatus(`已反选，当前选中${selected}个音程`, 'info');
 }
 
 // 在DOMContentLoaded事件中初始化音程训练
