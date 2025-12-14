@@ -11,9 +11,17 @@
     <div class="app-container">
         <header class="app-header">
             <h1><i class="fas fa-music"></i> QFMT 音乐训练</h1>
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="main-tab">
+                    <i class="fas fa-list"></i> 音符训练
+                </button>
+                <button class="tab-btn" data-tab="interval-tab">
+                    <i class="fas fa-arrows-alt-h"></i> 音程训练
+                </button>
+            </div>
         </header>
 
-        <div class="main-content">
+        <div class="main-content" id="main-tab">
             <!-- 左侧控制面板 -->
             <div class="control-panel">
                 <!-- 播放信息显示区域 -->
@@ -310,7 +318,198 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- 音程训练页面 -->
+        <div class="main-content hidden" id="interval-tab">
+            <div class="interval-training">
+                <div class="control-panel">
+                    <!-- 播放信息显示区域 -->
+                    <div class="playing-info-container">
+                        <div class="playing-info">
+                            <div class="playing-info-icon">
+                                <i class="fas fa-arrows-alt-h"></i>
+                            </div>
+                            <div class="playing-info-text">
+                                <div class="playing-label">当前音程</div>
+                                <div id="intervalPlayingContent" class="playing-content">请选择音程进行训练</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h2>音程设置</h2>
+
+                        <div class="form-group">
+                            <label for="intervalType">音程类型</label>
+                            <select id="intervalType" class="form-control">
+                                <option value="">--选择音程--</option>
+                                <option value="unison">一度(同音)</option>
+                                <option value="minor2">小二度</option>
+                                <option value="major2">大二度</option>
+                                <option value="minor3">小三度</option>
+                                <option value="major3">大三度</option>
+                                <option value="perfect4">纯四度</option>
+                                <option value="augmented4">增四度</option>
+                                <option value="perfect5">纯五度</option>
+                                <option value="minor6">小六度</option>
+                                <option value="major6">大六度</option>
+                                <option value="minor7">小七度</option>
+                                <option value="major7">大七度</option>
+                                <option value="octave">八度</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="intervalStartNote">起始音符</label>
+                            <select id="intervalStartNote" class="form-control">
+                                <option value="1">1 (C)</option>
+                                <option value="2">2 (D)</option>
+                                <option value="3">3 (E)</option>
+                                <option value="4">4 (F)</option>
+                                <option value="5">5 (G)</option>
+                                <option value="6">6 (A)</option>
+                                <option value="7">7 (B)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="intervalLevel">音高 Level</label>
+                                <input type="number" id="intervalLevel" class="form-control" value="4" min="1" max="8">
+                            </div>
+
+                            <div class="form-group half">
+                                <label for="intervalDelay">播放间隔 (ms)</label>
+                                <input type="number" id="intervalDelay" class="form-control" value="500" step="100" min="100">
+                            </div>
+                        </div>
+
+                        <div class="toggle-container">
+                            <div class="toggle-item">
+                                <span class="toggle-label">顺序播放</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="sequentialPlayback" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <div class="toggle-item">
+                                <span class="toggle-label">同时播放</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="simultaneousPlayback">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="buttons-container">
+                            <div class="button-row">
+                                <button id="playIntervalButton" class="btn primary">
+                                    <i class="fas fa-play"></i> 播放音程 <span class="shortcut">(W)</span>
+                                </button>
+                                <button id="randomIntervalButton" class="btn secondary">
+                                    <i class="fas fa-random"></i> 随机音程 <span class="shortcut">(Q)</span>
+                                </button>
+                            </div>
+
+                            <div class="button-row">
+                                <button id="generateIntervalsButton" class="btn primary">
+                                    <i class="fas fa-random"></i> 生成练习组 <span class="shortcut">(S)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="intervalStatusText" class="status-text"></div>
+                </div>
+
+                <div class="content-area">
+                    <!-- 音程练习区 -->
+                    <div class="interval-training-area">
+                        <div class="section-header">
+                            <h2>音程识别训练</h2>
+                        </div>
+
+                        <div class="interval-recognition-container">
+                            <div class="section-info">
+                                <p>倾听两个音符，判断它们之间的关系</p>
+                            </div>
+
+                            <div class="interval-buttons-grid">
+                                <button class="interval-option-btn" data-interval="unison">一度</button>
+                                <button class="interval-option-btn" data-interval="minor2">小二度</button>
+                                <button class="interval-option-btn" data-interval="major2">大二度</button>
+                                <button class="interval-option-btn" data-interval="minor3">小三度</button>
+                                <button class="interval-option-btn" data-interval="major3">大三度</button>
+                                <button class="interval-option-btn" data-interval="perfect4">纯四度</button>
+                                <button class="interval-option-btn" data-interval="augmented4">增四度</button>
+                                <button class="interval-option-btn" data-interval="perfect5">纯五度</button>
+                                <button class="interval-option-btn" data-interval="minor6">小六度</button>
+                                <button class="interval-option-btn" data-interval="major6">大六度</button>
+                                <button class="interval-option-btn" data-interval="minor7">小七度</button>
+                                <button class="interval-option-btn" data-interval="major7">大七度</button>
+                                <button class="interval-option-btn" data-interval="octave">八度</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 练习组合区 -->
+                    <div class="generated-intervals-section">
+                        <div class="section-header">
+                            <h2>练习音程列表</h2>
+                        </div>
+
+                        <div class="table-container">
+                            <table id="generatedIntervalsTable" class="data-grid">
+                                <thead>
+                                    <tr>
+                                        <th>音符对</th>
+                                        <th>音程</th>
+                                        <th>半音数</th>
+                                        <th width="60px">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Generated intervals will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interval-stats">
+                    <div class="section-header">
+                        <h2>训练统计</h2>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">总题数</div>
+                            <div class="stat-value" id="totalQuestions">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">正确</div>
+                            <div class="stat-value correct" id="correctAnswers">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">错误</div>
+                            <div class="stat-value incorrect" id="incorrectAnswers">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">正确率</div>
+                            <div class="stat-value" id="correctRate">0%</div>
+                        </div>
+                    </div>
+
+                    <button id="resetStatsButton" class="btn secondary">
+                        <i class="fas fa-redo"></i> 重置统计
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <footer class="app-footer">
             <p>QFMT 音乐训练 - HTML版 &copy; 2025</p>
         </footer>

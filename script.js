@@ -1107,4 +1107,362 @@ function repeatCombButtonClick() {
     } else {
         showStatus('没有上次播放的组合！', 'error');
     }
-} 
+}
+
+// ==================== 音程训练功能 ====================
+
+// 音程定义表 (半音数)
+const intervalDefinitions = {
+    'unison': { semitones: 0, name: '一度' },
+    'minor2': { semitones: 1, name: '小二度' },
+    'major2': { semitones: 2, name: '大二度' },
+    'minor3': { semitones: 3, name: '小三度' },
+    'major3': { semitones: 4, name: '大三度' },
+    'perfect4': { semitones: 5, name: '纯四度' },
+    'augmented4': { semitones: 6, name: '增四度' },
+    'perfect5': { semitones: 7, name: '纯五度' },
+    'minor6': { semitones: 8, name: '小六度' },
+    'major6': { semitones: 9, name: '大六度' },
+    'minor7': { semitones: 10, name: '小七度' },
+    'major7': { semitones: 11, name: '大七度' },
+    'octave': { semitones: 12, name: '八度' }
+};
+
+// 音符的半音位置
+const notePositions = {
+    '1': 0,  // C
+    '2': 2,  // D
+    '3': 4,  // E
+    '4': 5,  // F
+    '5': 7,  // G
+    '6': 9,  // A
+    '7': 11  // B
+};
+
+// 音程训练相关变量
+let intervalTrainingState = {
+    currentNote1: null,
+    currentNote2: null,
+    currentIntervalType: null,
+    isWaiting: false,
+    stats: {
+        total: 0,
+        correct: 0,
+        incorrect: 0
+    }
+};
+
+// 初始化音程训练
+function initIntervalTraining() {
+    // Tab切换
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', switchTab);
+    });
+
+    // 音程训练按钮
+    document.getElementById('playIntervalButton').addEventListener('click', playIntervalButtonClick);
+    document.getElementById('randomIntervalButton').addEventListener('click', randomIntervalButtonClick);
+    document.getElementById('generateIntervalsButton').addEventListener('click', generateIntervalsButtonClick);
+    document.getElementById('resetStatsButton').addEventListener('click', resetStatsButtonClick);
+
+    // 音程选择按钮
+    document.querySelectorAll('.interval-option-btn').forEach(btn => {
+        btn.addEventListener('click', handleIntervalOptionClick);
+    });
+
+    // 键盘快捷键
+    document.addEventListener('keydown', handleIntervalKeyDown);
+
+    // 加载统计数据
+    loadIntervalStats();
+}
+
+// 切换Tab页面
+function switchTab(event) {
+    const tabName = event.target.closest('.tab-btn').getAttribute('data-tab');
+    const allTabs = document.querySelectorAll('.main-content');
+    const allBtns = document.querySelectorAll('.tab-btn');
+
+    allTabs.forEach(tab => tab.classList.add('hidden'));
+    allBtns.forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(tabName).classList.remove('hidden');
+    event.target.closest('.tab-btn').classList.add('active');
+}
+
+// 计算两个音符之间的半音差
+function getSemitonesDifference(note1, note2) {
+    const pos1 = notePositions[note1];
+    const pos2 = notePositions[note2];
+    return (pos2 - pos1 + 12) % 12;
+}
+
+// 识别音程类型
+function identifyInterval(semitones) {
+    for (const [key, value] of Object.entries(intervalDefinitions)) {
+        if (value.semitones === semitones) {
+            return key;
+        }
+    }
+    return null;
+}
+
+// 播放音程
+function playInterval(note1, note2, level, sequential = true) {
+    if (sequential) {
+        // 顺序播放
+        const delay = parseInt(document.getElementById('intervalDelay').value) || 500;
+        playSound(note1, level);
+        setTimeout(() => {
+            playSound(note2, level);
+        }, delay);
+    } else {
+        // 同时播放
+        playSound(note1, level);
+        playSound(note2, level);
+    }
+}
+
+// 播放音程按钮点击
+function playIntervalButtonClick() {
+    const intervalType = document.getElementById('intervalType').value;
+    const startNote = document.getElementById('intervalStartNote').value;
+    const level = parseInt(document.getElementById('intervalLevel').value) || 4;
+    const sequential = document.getElementById('sequentialPlayback').checked;
+
+    if (!intervalType) {
+        showIntervalStatus('请选择音程类型！', 'error');
+        return;
+    }
+
+    const semitones = intervalDefinitions[intervalType].semitones;
+
+    // 计算第二个音符 (简化版本，假设在同一八度内)
+    let note1Pos = notePositions[startNote];
+    let note2Pos = (note1Pos + semitones) % 12;
+
+    // 找到对应的音符
+    let note2 = null;
+    for (const [note, pos] of Object.entries(notePositions)) {
+        if (pos === note2Pos) {
+            note2 = note;
+            break;
+        }
+    }
+
+    if (!note2) {
+        showIntervalStatus('无法生成该音程！', 'error');
+        return;
+    }
+
+    intervalTrainingState.currentNote1 = startNote;
+    intervalTrainingState.currentNote2 = note2;
+    intervalTrainingState.currentIntervalType = intervalType;
+
+    // 播放音程
+    playInterval(startNote, note2, level, sequential);
+
+    // 更新显示
+    const intervalName = intervalDefinitions[intervalType].name;
+    document.getElementById('intervalPlayingContent').textContent = `${startNote} - ${note2} (${intervalName})`;
+
+    showIntervalStatus(`播放音程: ${startNote} 到 ${note2}`, 'success');
+}
+
+// 随机音程按钮点击
+function randomIntervalButtonClick() {
+    const allIntervals = Object.keys(intervalDefinitions);
+    const randomInterval = allIntervals[Math.floor(Math.random() * allIntervals.length)];
+    const allNotes = ['1', '2', '3', '4', '5', '6', '7'];
+    const randomNote = allNotes[Math.floor(Math.random() * allNotes.length)];
+
+    // 设置下拉框的值
+    document.getElementById('intervalType').value = randomInterval;
+    document.getElementById('intervalStartNote').value = randomNote;
+
+    // 触发播放
+    setTimeout(() => {
+        playIntervalButtonClick();
+        intervalTrainingState.isWaiting = true;
+    }, 100);
+}
+
+// 处理音程选择点击
+function handleIntervalOptionClick(event) {
+    const selectedInterval = event.target.getAttribute('data-interval');
+
+    if (!intervalTrainingState.currentIntervalType) {
+        showIntervalStatus('请先播放一个音程！', 'error');
+        return;
+    }
+
+    if (intervalTrainingState.isWaiting) {
+        const correct = selectedInterval === intervalTrainingState.currentIntervalType;
+
+        intervalTrainingState.stats.total++;
+        if (correct) {
+            intervalTrainingState.stats.correct++;
+            showIntervalStatus('✓ 正确！', 'success');
+            event.target.classList.add('correct');
+            setTimeout(() => {
+                event.target.classList.remove('correct');
+            }, 1000);
+        } else {
+            intervalTrainingState.stats.incorrect++;
+            const correctName = intervalDefinitions[intervalTrainingState.currentIntervalType].name;
+            showIntervalStatus(`✗ 错误！正确答案是: ${correctName}`, 'error');
+            event.target.classList.add('incorrect');
+            setTimeout(() => {
+                event.target.classList.remove('incorrect');
+            }, 1000);
+        }
+
+        // 更新统计显示
+        updateIntervalStats();
+        saveIntervalStats();
+
+        // 重置状态，准备下一题
+        intervalTrainingState.isWaiting = false;
+        intervalTrainingState.currentIntervalType = null;
+    }
+}
+
+// 生成练习组按钮点击
+function generateIntervalsButtonClick() {
+    const startNote = document.getElementById('intervalStartNote').value;
+    const level = parseInt(document.getElementById('intervalLevel').value) || 4;
+    const tbody = document.querySelector('#generatedIntervalsTable tbody');
+
+    tbody.innerHTML = '';
+
+    const intervals = [];
+    for (const [key, value] of Object.entries(intervalDefinitions)) {
+        const semitones = value.semitones;
+        let note1Pos = notePositions[startNote];
+        let note2Pos = (note1Pos + semitones) % 12;
+
+        let note2 = null;
+        for (const [note, pos] of Object.entries(notePositions)) {
+            if (pos === note2Pos) {
+                note2 = note;
+                break;
+            }
+        }
+
+        if (note2) {
+            intervals.push({
+                interval: key,
+                name: value.name,
+                note1: startNote,
+                note2: note2,
+                semitones: semitones
+            });
+        }
+    }
+
+    // 添加到表格
+    intervals.forEach((interval, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${interval.note1} - ${interval.note2}</td>
+            <td>${interval.name}</td>
+            <td>${interval.semitones}</td>
+            <td><button class="btn primary" onclick="playGeneratedInterval('${interval.note1}', '${interval.note2}', ${level})">播放</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    showIntervalStatus(`已生成${intervals.length}个音程`, 'success');
+}
+
+// 播放生成的音程
+function playGeneratedInterval(note1, note2, level) {
+    const sequential = document.getElementById('sequentialPlayback').checked;
+    playInterval(note1, note2, level, sequential);
+
+    intervalTrainingState.currentNote1 = note1;
+    intervalTrainingState.currentNote2 = note2;
+
+    // 识别音程
+    const semitones = getSemitonesDifference(note1, note2);
+    intervalTrainingState.currentIntervalType = identifyInterval(semitones);
+    intervalTrainingState.isWaiting = true;
+
+    showIntervalStatus(`请识别音程: ${note1} - ${note2}`, 'info');
+}
+
+// 处理音程相关的键盘快捷键
+function handleIntervalKeyDown(event) {
+    const currentTab = document.querySelector('.main-content:not(.hidden)');
+    if (currentTab.id !== 'interval-tab') return;
+
+    if (event.key === 'w' || event.key === 'W') {
+        playIntervalButtonClick();
+    } else if (event.key === 'q' || event.key === 'Q') {
+        randomIntervalButtonClick();
+    } else if (event.key === 's' || event.key === 'S') {
+        generateIntervalsButtonClick();
+    }
+}
+
+// 显示音程训练状态信息
+function showIntervalStatus(message, type = 'error') {
+    const statusText = document.getElementById('intervalStatusText');
+    statusText.textContent = message;
+    statusText.className = 'status-text';
+
+    if (type === 'success') {
+        statusText.style.color = 'var(--success-color)';
+    } else if (type === 'info') {
+        statusText.style.color = 'var(--primary-color)';
+    } else {
+        statusText.style.color = 'var(--danger-color)';
+    }
+
+    // 清除状态消息
+    setTimeout(() => {
+        statusText.textContent = '';
+    }, 3000);
+}
+
+// 更新训练统计显示
+function updateIntervalStats() {
+    document.getElementById('totalQuestions').textContent = intervalTrainingState.stats.total;
+    document.getElementById('correctAnswers').textContent = intervalTrainingState.stats.correct;
+    document.getElementById('incorrectAnswers').textContent = intervalTrainingState.stats.incorrect;
+
+    const rate = intervalTrainingState.stats.total === 0
+        ? '0%'
+        : Math.round((intervalTrainingState.stats.correct / intervalTrainingState.stats.total) * 100) + '%';
+    document.getElementById('correctRate').textContent = rate;
+}
+
+// 重置统计按钮
+function resetStatsButtonClick() {
+    if (confirm('确定要重置统计数据吗？')) {
+        intervalTrainingState.stats = { total: 0, correct: 0, incorrect: 0 };
+        updateIntervalStats();
+        saveIntervalStats();
+        showIntervalStatus('统计已重置', 'success');
+    }
+}
+
+// 保存统计数据到本地存储
+function saveIntervalStats() {
+    localStorage.setItem('intervalStats', JSON.stringify(intervalTrainingState.stats));
+}
+
+// 加载统计数据从本地存储
+function loadIntervalStats() {
+    const saved = localStorage.getItem('intervalStats');
+    if (saved) {
+        intervalTrainingState.stats = JSON.parse(saved);
+        updateIntervalStats();
+    }
+}
+
+// 在DOMContentLoaded事件中初始化音程训练
+document.addEventListener('DOMContentLoaded', () => {
+    initIntervalTraining();
+}); 
