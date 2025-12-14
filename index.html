@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QFMT - 音乐训练</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-music"></i> QFMT 音乐训练</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <!-- 播放信息显示区域 -->
+                <div class="playing-info-container">
+                    <div class="playing-info">
+                        <div class="playing-info-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="playing-info-text">
+                            <div class="playing-label">当前播放</div>
+                            <div id="playingContent" class="playing-content">请选择音符进行播放</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>基本设置</h2>
+                    
+                    <div class="form-group">
+                        <label for="keyInput">输入音组</label>
+                        <div class="input-with-keyboard">
+                            <input type="text" id="keyInput" class="form-control" placeholder="例如: 123 或 +1-2">
+                            <button id="clearKeyInput" class="clear-btn" title="清除">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 小键盘区域 -->
+                    <div class="virtual-keyboard">
+                        <div class="keyboard-row">
+                            <button class="key-btn high-note" data-key="+1">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">1</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+2">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">2</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+3">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">3</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+4">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">4</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+5">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">5</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+6">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">6</span>
+                                </div>
+                            </button>
+                            <button class="key-btn high-note" data-key="+7">
+                                <div class="note-with-dots">
+                                    <span class="dots above">•</span>
+                                    <span class="note">7</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key-btn" data-key="1">1</button>
+                            <button class="key-btn" data-key="2">2</button>
+                            <button class="key-btn" data-key="3">3</button>
+                            <button class="key-btn" data-key="4">4</button>
+                            <button class="key-btn" data-key="5">5</button>
+                            <button class="key-btn" data-key="6">6</button>
+                            <button class="key-btn" data-key="7">7</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key-btn low-note" data-key="-1">
+                                <div class="note-with-dots">
+                                    <span class="note">1</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-2">
+                                <div class="note-with-dots">
+                                    <span class="note">2</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-3">
+                                <div class="note-with-dots">
+                                    <span class="note">3</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-4">
+                                <div class="note-with-dots">
+                                    <span class="note">4</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-5">
+                                <div class="note-with-dots">
+                                    <span class="note">5</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-6">
+                                <div class="note-with-dots">
+                                    <span class="note">6</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                            <button class="key-btn low-note" data-key="-7">
+                                <div class="note-with-dots">
+                                    <span class="note">7</span>
+                                    <span class="dots below">•</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="keyboard-row action-row">
+                            <button id="clearKeyboardBtn" class="key-btn action-key">
+                                <i class="fas fa-times"></i> 清除
+                            </button>
+                            <button id="backspaceBtn" class="key-btn action-key">
+                                <i class="fas fa-backspace"></i> 退格
+                            </button>
+                            <button id="playInputBtn" class="key-btn action-key play-btn">
+                                <i class="fas fa-play"></i> 播放
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="levelInput">音高 Level</label>
+                            <input type="number" id="levelInput" class="form-control" value="4" min="1" max="8">
+                        </div>
+                        
+                        <div class="form-group half">
+                            <label for="ranCnt">播放数量</label>
+                            <input type="number" id="ranCnt" class="form-control" value="3" min="1" max="10">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="playTimeInput">播放时间 (ms)</label>
+                            <input type="number" id="playTimeInput" class="form-control" value="800" step="100">
+                        </div>
+                        
+                        <div class="form-group half">
+                            <label for="playTimeinterInput">播放间隔 (ms)</label>
+                            <input type="number" id="playTimeinterInput" class="form-control" value="800" step="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h2>播放选项</h2>
+                    
+                    <div class="toggle-container">
+                        <div class="toggle-item">
+                            <span class="toggle-label">播放标准音</span>
+                            <label class="switch">
+                                <input type="checkbox" id="playStdCheckbox">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <div class="toggle-label-with-input">
+                                <span class="toggle-label">固定首音</span>
+                                <input type="text" id="fixTxt" class="mini-input" value="6">
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="fixChk" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="buttons-container">
+                        <div class="button-row">
+                            <button id="playButton" class="btn primary">
+                                <i class="fas fa-play"></i> 播放 <span class="shortcut">(W)</span>
+                            </button>
+                            <button id="repeatButton" class="btn secondary">
+                                <i class="fas fa-random"></i> 随机播放 <span class="shortcut">(Q)</span>
+                            </button>
+                        </div>
+                        
+                        <div class="button-row">
+                            <button id="playCombButton" class="btn primary">
+                                <i class="fas fa-random"></i> 随机播组 <span class="shortcut">(S)</span>
+                            </button>
+                            <button id="repeatCombButton" class="btn secondary">
+                                <i class="fas fa-sync"></i> 重播组合 <span class="shortcut">(A)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="statusText" class="status-text"></div>
+            </div>
+            
+            <!-- 中间内容区 -->
+            <div class="content-area">
+                <!-- 音符管理区 -->
+                <div class="notes-management">
+                    <div class="section-header">
+                        <h2>音符管理</h2>
+                        <div class="action-buttons">
+                            <button id="addNoteButton" class="icon-btn" title="添加音符">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button id="updateNoteButton" class="icon-btn" title="修改音符">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button id="deleteNoteButton" class="icon-btn" title="删除音符">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container notes-table">
+                        <table id="notesTable" class="data-grid">
+                            <thead>
+                                <tr>
+                                    <th>音组</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Notes will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 组合区域 -->
+                <div class="combinations-section">
+                    <div class="section-header">
+                        <h2>全部组合</h2>
+                        <div class="select-all">
+                            <input type="checkbox" id="selectAllCheckBox">
+                            <label for="selectAllCheckBox">全选</label>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="combinationsTable" class="data-grid">
+                            <thead>
+                                <tr>
+                                    <th width="40px"></th>
+                                    <th>组合</th>
+                                    <th width="60px">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Combinations will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧组合区 -->
+            <div class="pair-combinations">
+                <div class="section-header">
+                    <h2>对组合</h2>
+                </div>
+                
+                <div class="table-container">
+                    <table id="combinationsSingleTable" class="data-grid">
+                        <thead>
+                            <tr>
+                                <th>组合</th>
+                                <th width="60px">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Single combinations will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="app-footer">
+            <p>QFMT 音乐训练 - HTML版 &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
