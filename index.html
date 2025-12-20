@@ -321,13 +321,13 @@
 
         <!-- 音程训练页面 -->
         <div class="main-content hidden" id="interval-tab">
-            <div class="interval-training">
-                <div class="control-panel">
-                    <!-- 播放信息显示区域 -->
-                    <div class="playing-info-container">
+            <div class="interval-training-full">
+                <!-- 顶部控制栏 -->
+                <div class="interval-top-bar">
+                    <div class="interval-playing-info">
                         <div class="playing-info">
                             <div class="playing-info-icon">
-                                <i class="fas fa-arrows-alt-h"></i>
+                                <i class="fas fa-music"></i>
                             </div>
                             <div class="playing-info-text">
                                 <div class="playing-label">当前音程</div>
@@ -336,11 +336,24 @@
                         </div>
                     </div>
 
-                    <div class="panel-section">
-                        <h2>音程设置</h2>
+                    <div class="interval-control-buttons">
+                        <button id="playIntervalButton" class="btn primary">
+                            <i class="fas fa-play"></i> 播放 <span class="shortcut">(W)</span>
+                        </button>
+                        <button id="randomIntervalButton" class="btn secondary">
+                            <i class="fas fa-dice"></i> 随机 <span class="shortcut">(Q)</span>
+                        </button>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="intervalType">音程类型</label>
+                    <div id="intervalStatusText" class="status-text"></div>
+                </div>
+
+                <!-- 中间主要区域 -->
+                <div class="interval-main-area">
+                    <!-- 左侧设置面板 -->
+                    <div class="interval-settings-panel">
+                        <div class="settings-section">
+                            <h3>音程类型</h3>
                             <select id="intervalType" class="form-control">
                                 <option value="">--选择音程--</option>
                                 <option value="unison">一度(同音)</option>
@@ -359,8 +372,8 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="intervalStartNote">起始音符</label>
+                        <div class="settings-section">
+                            <h3>起始音符</h3>
                             <select id="intervalStartNote" class="form-control">
                                 <option value="1">1 (C)</option>
                                 <option value="2">2 (D)</option>
@@ -372,9 +385,9 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label>播放方向</label>
-                            <div class="direction-buttons">
+                        <div class="settings-section">
+                            <h3>播放方向</h3>
+                            <div class="direction-buttons vertical">
                                 <button id="ascendingBtn" class="direction-btn active" data-direction="ascending">
                                     <i class="fas fa-arrow-up"></i> 上行
                                 </button>
@@ -387,153 +400,156 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>训练范围</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="unison" checked> 一度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="minor2" checked> 小二度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="major2" checked> 大二度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="minor3" checked> 小三度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="major3" checked> 大三度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="perfect4" checked> 纯四度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="augmented4" checked> 增四度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="perfect5" checked> 纯五度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="minor6" checked> 小六度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="major6" checked> 大六度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="minor7" checked> 小七度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="major7" checked> 大七度
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" class="interval-range-checkbox" value="octave" checked> 八度
-                                </label>
+                        <div class="settings-section">
+                            <h3>音高和延迟</h3>
+                            <div class="form-group">
+                                <label for="intervalLevel">Level (1-8)</label>
+                                <input type="number" id="intervalLevel" class="form-control" value="4" min="1" max="8">
                             </div>
-                            <div class="range-buttons">
+                            <div class="form-group">
+                                <label for="intervalDelay">延迟 (ms)</label>
+                                <input type="number" id="intervalDelay" class="form-control" value="500" step="100" min="100">
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>播放选项</h3>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="sequentialPlayback" checked>
+                                顺序播放
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="simultaneousPlayback">
+                                同时播放
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 中央训练区域 -->
+                    <div class="interval-recognition-area">
+                        <div class="recognition-header">
+                            <h2>音程识别训练</h2>
+                        </div>
+
+                        <div class="interval-buttons-grid large">
+                            <button class="interval-option-btn" data-interval="unison">
+                                <div class="interval-name">一度</div>
+                                <div class="interval-semitones">0半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="minor2">
+                                <div class="interval-name">小二度</div>
+                                <div class="interval-semitones">1半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="major2">
+                                <div class="interval-name">大二度</div>
+                                <div class="interval-semitones">2半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="minor3">
+                                <div class="interval-name">小三度</div>
+                                <div class="interval-semitones">3半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="major3">
+                                <div class="interval-name">大三度</div>
+                                <div class="interval-semitones">4半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="perfect4">
+                                <div class="interval-name">纯四度</div>
+                                <div class="interval-semitones">5半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="augmented4">
+                                <div class="interval-name">增四度</div>
+                                <div class="interval-semitones">6半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="perfect5">
+                                <div class="interval-name">纯五度</div>
+                                <div class="interval-semitones">7半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="minor6">
+                                <div class="interval-name">小六度</div>
+                                <div class="interval-semitones">8半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="major6">
+                                <div class="interval-name">大六度</div>
+                                <div class="interval-semitones">9半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="minor7">
+                                <div class="interval-name">小七度</div>
+                                <div class="interval-semitones">10半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="major7">
+                                <div class="interval-name">大七度</div>
+                                <div class="interval-semitones">11半音</div>
+                            </button>
+                            <button class="interval-option-btn" data-interval="octave">
+                                <div class="interval-name">八度</div>
+                                <div class="interval-semitones">12半音</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 右侧练习组合 -->
+                    <div class="interval-list-panel">
+                        <div class="list-header">
+                            <h3>训练范围</h3>
+                            <div class="list-buttons">
                                 <button id="selectAllIntervals" class="range-btn">全选</button>
                                 <button id="deselectAllIntervals" class="range-btn">反选</button>
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group half">
-                                <label for="intervalLevel">音高 Level</label>
-                                <input type="number" id="intervalLevel" class="form-control" value="4" min="1" max="8">
-                            </div>
-
-                            <div class="form-group half">
-                                <label for="intervalDelay">播放间隔 (ms)</label>
-                                <input type="number" id="intervalDelay" class="form-control" value="500" step="100" min="100">
-                            </div>
+                        <div class="interval-range-list">
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="unison" checked> 一度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="minor2" checked> 小二度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="major2" checked> 大二度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="minor3" checked> 小三度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="major3" checked> 大三度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="perfect4" checked> 纯四度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="augmented4" checked> 增四度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="perfect5" checked> 纯五度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="minor6" checked> 小六度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="major6" checked> 大六度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="minor7" checked> 小七度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="major7" checked> 大七度
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" class="interval-range-checkbox" value="octave" checked> 八度
+                            </label>
                         </div>
 
-                        <div class="toggle-container">
-                            <div class="toggle-item">
-                                <span class="toggle-label">顺序播放</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="sequentialPlayback" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
+                        <button id="generateIntervalsButton" class="btn primary" style="width: 100%; margin-top: 1rem;">
+                            <i class="fas fa-list"></i> 生成练习列表 <span class="shortcut">(S)</span>
+                        </button>
 
-                            <div class="toggle-item">
-                                <span class="toggle-label">同时播放</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="simultaneousPlayback">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h2>播放控制</h2>
-                        <div class="buttons-container">
-                            <div class="button-row">
-                                <button id="playIntervalButton" class="btn primary">
-                                    <i class="fas fa-play"></i> 播放音程 <span class="shortcut">(W)</span>
-                                </button>
-                                <button id="randomIntervalButton" class="btn secondary">
-                                    <i class="fas fa-random"></i> 随机音程 <span class="shortcut">(Q)</span>
-                                </button>
-                            </div>
-
-                            <div class="button-row">
-                                <button id="generateIntervalsButton" class="btn primary">
-                                    <i class="fas fa-random"></i> 生成练习组 <span class="shortcut">(S)</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="intervalStatusText" class="status-text"></div>
-                </div>
-
-                <div class="content-area">
-                    <!-- 音程练习区 -->
-                    <div class="interval-training-area">
-                        <div class="section-header">
-                            <h2>音程识别训练</h2>
-                        </div>
-
-                        <div class="interval-recognition-container">
-                            <div class="section-info">
-                                <p>倾听两个音符，判断它们之间的关系</p>
-                            </div>
-
-                            <div class="interval-buttons-grid">
-                                <button class="interval-option-btn" data-interval="unison">一度</button>
-                                <button class="interval-option-btn" data-interval="minor2">小二度</button>
-                                <button class="interval-option-btn" data-interval="major2">大二度</button>
-                                <button class="interval-option-btn" data-interval="minor3">小三度</button>
-                                <button class="interval-option-btn" data-interval="major3">大三度</button>
-                                <button class="interval-option-btn" data-interval="perfect4">纯四度</button>
-                                <button class="interval-option-btn" data-interval="augmented4">增四度</button>
-                                <button class="interval-option-btn" data-interval="perfect5">纯五度</button>
-                                <button class="interval-option-btn" data-interval="minor6">小六度</button>
-                                <button class="interval-option-btn" data-interval="major6">大六度</button>
-                                <button class="interval-option-btn" data-interval="minor7">小七度</button>
-                                <button class="interval-option-btn" data-interval="major7">大七度</button>
-                                <button class="interval-option-btn" data-interval="octave">八度</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 练习组合区 -->
-                    <div class="generated-intervals-section">
-                        <div class="section-header">
-                            <h2>练习音程列表</h2>
-                        </div>
-
-                        <div class="table-container">
+                        <div class="list-content">
                             <table id="generatedIntervalsTable" class="data-grid">
                                 <thead>
                                     <tr>
                                         <th>音符对</th>
                                         <th>音程</th>
-                                        <th>半音数</th>
-                                        <th width="60px">操作</th>
+                                        <th width="50px">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -542,35 +558,6 @@
                             </table>
                         </div>
                     </div>
-                </div>
-
-                <div class="interval-stats">
-                    <div class="section-header">
-                        <h2>训练统计</h2>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-label">总题数</div>
-                            <div class="stat-value" id="totalQuestions">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">正确</div>
-                            <div class="stat-value correct" id="correctAnswers">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">错误</div>
-                            <div class="stat-value incorrect" id="incorrectAnswers">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">正确率</div>
-                            <div class="stat-value" id="correctRate">0%</div>
-                        </div>
-                    </div>
-
-                    <button id="resetStatsButton" class="btn secondary">
-                        <i class="fas fa-redo"></i> 重置统计
-                    </button>
                 </div>
             </div>
         </div>
