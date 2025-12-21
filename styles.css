@@ -276,6 +276,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: nowrap;
 }
 
 .interval-display .sep {
@@ -541,6 +542,40 @@ input:checked + .slider:before {
 .section-header h2 {
     font-size: 1.1rem;
     color: var(--primary-color);
+}
+
+.random-seq-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.random-seq-controls label {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.random-seq-controls .label {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-right: 0.25rem;
+}
+
+.random-seq-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.random-seq-display {
+    min-height: 34px;
+    padding: 6px 8px;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    background: rgba(74, 107, 220, 0.04);
+    display: flex;
+    align-items: center;
 }
 
 .action-buttons {

@@ -7,6 +7,8 @@ let selectedNote = null;
 let selectedCombination = null;
 let lastComb = null;
 const basePath = 'piano/'; // Change this to the path where audio files are stored
+const SETTINGS_KEY = 'qfmt.settings.v1';
+let saveSettingsTimer = null;
 
 // DOM Elements
 const keyInput = document.getElementById('keyInput');
@@ -24,11 +26,140 @@ const combinationsSingleTable = document.getElementById('combinationsSingleTable
 const selectAllCheckBox = document.getElementById('selectAllCheckBox');
 const playingContent = document.getElementById('playingContent');
 const playingInfo = document.querySelector('.playing-info');
+const randomSeqLenInput = document.getElementById('randomSeqLen');
+const randomSeqButton = document.getElementById('randomSeqButton');
+const playRandomSeqButton = document.getElementById('playRandomSeqButton');
+const randomSeqDisplay = document.getElementById('randomSeqDisplay');
 // 虚拟键盘元素
 const clearKeyInputBtn = document.getElementById('clearKeyInput');
 const playInputBtn = document.getElementById('playInputBtn');
 const backspaceBtn = document.getElementById('backspaceBtn');
 const keyBtns = document.querySelectorAll('.key-btn[data-key]');
+
+function scheduleSaveAppSettings() {
+    clearTimeout(saveSettingsTimer);
+    saveSettingsTimer = setTimeout(saveAppSettings, 150);
+}
+
+function saveAppSettings() {
+    try {
+        const settings = {
+            version: 1,
+            main: {
+                level: levelInput ? parseInt(levelInput.value) : undefined,
+                ranCnt: ranCnt ? parseInt(ranCnt.value) : undefined,
+                playTime: playTimeInput ? parseInt(playTimeInput.value) : undefined,
+                playTimeInterval: playTimeinterInput ? parseInt(playTimeinterInput.value) : undefined,
+                playStd: playStdCheckbox ? !!playStdCheckbox.checked : undefined,
+                fixFirstEnabled: fixChk ? !!fixChk.checked : undefined,
+                fixFirstNote: fixTxt ? String(fixTxt.value ?? '') : undefined,
+                randomSeqLen: randomSeqLenInput ? parseInt(randomSeqLenInput.value) : undefined
+            },
+            interval: {
+                intervalType: document.getElementById('intervalType')?.value,
+                intervalStartNote: document.getElementById('intervalStartNote')?.value,
+                intervalLevel: parseInt(document.getElementById('intervalLevel')?.value),
+                intervalDelay: parseInt(document.getElementById('intervalDelay')?.value),
+                sequentialPlayback: !!document.getElementById('sequentialPlayback')?.checked,
+                simultaneousPlayback: !!document.getElementById('simultaneousPlayback')?.checked,
+                playDirection: intervalTrainingState?.playDirection,
+                ranges: Array.from(document.querySelectorAll('.interval-range-checkbox:checked')).map(el => el.value)
+            }
+        };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+    }
+}
+
+function applyAppSettings(settings) {
+    if (!settings || typeof settings !== 'object') return;
+
+    try {
+        const main = settings.main ?? {};
+        if (levelInput && Number.isFinite(main.level)) levelInput.value = String(main.level);
+        if (ranCnt && Number.isFinite(main.ranCnt)) ranCnt.value = String(main.ranCnt);
+        if (playTimeInput && Number.isFinite(main.playTime)) playTimeInput.value = String(main.playTime);
+        if (playTimeinterInput && Number.isFinite(main.playTimeInterval)) playTimeinterInput.value = String(main.playTimeInterval);
+        if (playStdCheckbox && typeof main.playStd === 'boolean') playStdCheckbox.checked = main.playStd;
+        if (fixChk && typeof main.fixFirstEnabled === 'boolean') fixChk.checked = main.fixFirstEnabled;
+        if (fixTxt && typeof main.fixFirstNote === 'string') fixTxt.value = main.fixFirstNote;
+        if (randomSeqLenInput && Number.isFinite(main.randomSeqLen)) randomSeqLenInput.value = String(main.randomSeqLen);
+
+        const interval = settings.interval ?? {};
+        const intervalTypeEl = document.getElementById('intervalType');
+        const intervalStartNoteEl = document.getElementById('intervalStartNote');
+        const intervalLevelEl = document.getElementById('intervalLevel');
+        const intervalDelayEl = document.getElementById('intervalDelay');
+        const sequentialPlaybackEl = document.getElementById('sequentialPlayback');
+        const simultaneousPlaybackEl = document.getElementById('simultaneousPlayback');
+
+        if (intervalTypeEl && typeof interval.intervalType === 'string') intervalTypeEl.value = interval.intervalType;
+        if (intervalStartNoteEl && typeof interval.intervalStartNote === 'string') intervalStartNoteEl.value = interval.intervalStartNote;
+        if (intervalLevelEl && Number.isFinite(interval.intervalLevel)) intervalLevelEl.value = String(interval.intervalLevel);
+        if (intervalDelayEl && Number.isFinite(interval.intervalDelay)) intervalDelayEl.value = String(interval.intervalDelay);
+        if (sequentialPlaybackEl && typeof interval.sequentialPlayback === 'boolean') sequentialPlaybackEl.checked = interval.sequentialPlayback;
+        if (simultaneousPlaybackEl && typeof interval.simultaneousPlayback === 'boolean') simultaneousPlaybackEl.checked = interval.simultaneousPlayback;
+
+        if (interval.playDirection === 'ascending' || interval.playDirection === 'descending' || interval.playDirection === 'random') {
+            intervalTrainingState.playDirection = interval.playDirection;
+            document.querySelectorAll('.direction-btn').forEach(btn => btn.classList.remove('active'));
+            const btn = document.querySelector(`.direction-btn[data-direction="${interval.playDirection}"]`);
+            if (btn) btn.classList.add('active');
+        }
+
+        if (Array.isArray(interval.ranges) && interval.ranges.length > 0) {
+            const set = new Set(interval.ranges);
+            document.querySelectorAll('.interval-range-checkbox').forEach(cb => {
+                cb.checked = set.has(cb.value);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to apply settings:', error);
+    }
+}
+
+function loadAppSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return;
+        applyAppSettings(JSON.parse(raw));
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+}
+
+function initAutoSaveForSettings() {
+    const inputs = [
+        levelInput,
+        ranCnt,
+        playTimeInput,
+        playTimeinterInput,
+        playStdCheckbox,
+        fixTxt,
+        fixChk,
+        randomSeqLenInput,
+        document.getElementById('intervalType'),
+        document.getElementById('intervalStartNote'),
+        document.getElementById('intervalLevel'),
+        document.getElementById('intervalDelay'),
+        document.getElementById('sequentialPlayback'),
+        document.getElementById('simultaneousPlayback')
+    ].filter(Boolean);
+
+    inputs.forEach(el => {
+        el.addEventListener('input', scheduleSaveAppSettings);
+        el.addEventListener('change', scheduleSaveAppSettings);
+    });
+
+    document.querySelectorAll('.interval-range-checkbox').forEach(cb => {
+        cb.addEventListener('change', scheduleSaveAppSettings);
+    });
+
+    document.querySelectorAll('.direction-btn').forEach(btn => {
+        btn.addEventListener('click', scheduleSaveAppSettings);
+    });
+}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,12 +174,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('playButton').addEventListener('click', playButtonClick);
     document.getElementById('playCombButton').addEventListener('click', playCombButtonClick);
     document.getElementById('repeatCombButton').addEventListener('click', repeatCombButtonClick);
+    if (randomSeqButton) randomSeqButton.addEventListener('click', randomSeqButtonClick);
+    if (playRandomSeqButton) playRandomSeqButton.addEventListener('click', playRandomSeqButtonClick);
     selectAllCheckBox.addEventListener('click', selectAllCheckBoxClick);
     playTimeInput.addEventListener('input', playTimeInputChange);
     playTimeinterInput.addEventListener('input', playTimeInputChange);
     
     // 虚拟键盘事件监听
     initVirtualKeyboard();
+
+    // 组合表内单个音符可点击发声（包含随机组合显示区）
+    initCombinationNoteClickToPlay();
     
     // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyDown);
@@ -271,13 +407,13 @@ function getMusicalNotation(item) {
     
     if (item.offset > 0) {
         // High note
-        html = `<div class="note-with-dots"><span class="dots above">${renderDotsHtml(Math.abs(item.offset))}</span><span class="note">${item.note}</span></div>`;
+        html = `<div class="note-with-dots" data-note="${item.note}" data-offset="${item.offset}"><span class="dots above">${renderDotsHtml(Math.abs(item.offset))}</span><span class="note">${item.note}</span></div>`;
     } else if (item.offset < 0) {
         // Low note
-        html = `<div class="note-with-dots"><span class="note">${item.note}</span><span class="dots below">${renderDotsHtml(Math.abs(item.offset))}</span></div>`;
+        html = `<div class="note-with-dots" data-note="${item.note}" data-offset="${item.offset}"><span class="note">${item.note}</span><span class="dots below">${renderDotsHtml(Math.abs(item.offset))}</span></div>`;
     } else {
         // Regular note
-        html = `<div class="note-with-dots"><span class="note">${item.note}</span></div>`;
+        html = `<div class="note-with-dots" data-note="${item.note}" data-offset="0"><span class="note">${item.note}</span></div>`;
     }
     
     return html;
@@ -397,7 +533,7 @@ function updateSelectAllCheckbox() {
 function htmlToPlainText(html) {
     // 更新正则表达式以匹配新的HTML结构 (使用div而不是span)
     const plainText = [];
-    const regex = /<div class="note-with-dots"><span class="dots above">.+?<\/span><span class="note">(\d)<\/span><\/div>|<div class="note-with-dots"><span class="note">(\d)<\/span><span class="dots below">.+?<\/span><\/div>|<div class="note-with-dots"><span class="note">(\d)<\/span><\/div>/g;
+    const regex = /<div class="note-with-dots"[^>]*><span class="dots above">.+?<\/span><span class="note">(\d)<\/span><\/div>|<div class="note-with-dots"[^>]*><span class="note">(\d)<\/span><span class="dots below">.+?<\/span><\/div>|<div class="note-with-dots"[^>]*><span class="note">(\d)<\/span><\/div>/g;
     
     let match;
     while ((match = regex.exec(html)) !== null) {
@@ -496,6 +632,95 @@ function renderCombinationsSingleTable(combinations) {
     if (combinations.length > 0) {
         processInBatches(0);
     }
+}
+
+function randomSeqButtonClick() {
+    const source = selectedNote?.noteName ?? keyInput.value.trim();
+    if (!source) {
+        showStatus('请先选择一个音组或输入音组！', 'error');
+        return;
+    }
+
+    const pool = parseString(source);
+    if (pool.length === 0) {
+        showStatus('音组解析失败！', 'error');
+        return;
+    }
+
+    const requestedLen = parseInt(randomSeqLenInput?.value) || 6;
+    const len = Math.max(2, Math.min(50, requestedLen));
+    if (randomSeqLenInput) randomSeqLenInput.value = String(len);
+
+    if (pool.length === 1 && len > 1) {
+        showStatus('音组只有 1 个音，无法生成相邻不相同的随机组合。', 'error');
+        return;
+    }
+
+    const sequence = [];
+    let prev = null;
+    const maxAttempts = 3000;
+    let attempts = 0;
+
+    while (sequence.length < len && attempts < maxAttempts) {
+        attempts++;
+        const candidate = pool[Math.floor(Math.random() * pool.length)];
+        if (prev && candidate.note === prev.note && candidate.offset === prev.offset) continue;
+        sequence.push(candidate);
+        prev = candidate;
+    }
+
+    if (sequence.length < len) {
+        showStatus('随机组合生成失败（相邻不相同约束过强），请增大音组内容。', 'error');
+        return;
+    }
+
+    const plainText = sequence.map(n => `${getSign(n.offset)}${n.note}`).join('');
+    if (randomSeqDisplay) {
+        randomSeqDisplay.innerHTML = formatCombination(sequence);
+        randomSeqDisplay.dataset.combination = plainText;
+    }
+
+    updatePlayingContent(plainText);
+    lastComb = sequence;
+    selectedCombination = plainText;
+    showStatus('已生成随机组合', 'success');
+}
+
+function playRandomSeqButtonClick() {
+    const plainText = randomSeqDisplay?.dataset?.combination;
+    if (!plainText) {
+        showStatus('请先生成随机组合！', 'error');
+        return;
+    }
+    const keys = parseString(plainText);
+    if (!keys || keys.length === 0) {
+        showStatus('无效的随机组合！', 'error');
+        return;
+    }
+    playSounds(keys, parseInt(levelInput.value) || 4);
+    updatePlayingContent(plainText);
+    lastComb = keys;
+    selectedCombination = plainText;
+}
+
+function initCombinationNoteClickToPlay() {
+    const containers = [combinationsTable, combinationsSingleTable, randomSeqDisplay].filter(Boolean);
+    containers.forEach(container => {
+        container.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.closest('button') || target.closest('input')) return;
+
+            const noteEl = target.closest('.note-with-dots');
+            if (!noteEl) return;
+
+            const note = noteEl.dataset.note;
+            const offset = parseInt(noteEl.dataset.offset) || 0;
+            if (!note) return;
+
+            const baseLevel = parseInt(levelInput.value) || 4;
+            playSound(note, baseLevel + offset);
+        });
+    });
 }
 
 // Add a new note
@@ -1311,31 +1536,47 @@ function playIntervalButtonClick(actualDirectionOverride) {
         ? (Math.random() > 0.5 ? 'ascending' : 'descending')
         : directionSetting);
 
-    const target = computeIntervalTarget(startNote, semitones, actualDirection);
-    if (!target) {
+    // 统一先按“上行”计算目标音；下行仅改变播放/显示顺序（高->低）
+    const targetUp = computeIntervalTarget(startNote, semitones, 'ascending');
+    if (!targetUp) {
         showIntervalStatus('无法生成该音程！', 'error');
         return;
     }
 
     intervalTrainingState.currentNote1 = startNote;
-    intervalTrainingState.currentNote2 = target.display;
+    intervalTrainingState.currentNote2 = targetUp.display;
     intervalTrainingState.currentIntervalType = intervalType;
 
-    // 播放音程（跨八度时用 octaveOffset 修正音高）
-    const level2 = level + target.octaveOffset;
-    playInterval(
-        startNote,
-        target.audioNote,
-        { level1: level, level2: target.audioFlat ? `${level2}b` : level2 },
-        sequential
-    );
+    const targetUpLevel = level + targetUp.octaveOffset;
+    const targetUpLevel2 = targetUp.audioFlat ? `${targetUpLevel}b` : targetUpLevel;
+
+    if (actualDirection === 'descending') {
+        // 下行：高音 -> 低音
+        playInterval(
+            targetUp.audioNote,
+            startNote,
+            { level1: targetUpLevel2, level2: level },
+            sequential
+        );
+    } else {
+        // 上行：低音 -> 高音
+        playInterval(
+            startNote,
+            targetUp.audioNote,
+            { level1: level, level2: targetUpLevel2 },
+            sequential
+        );
+    }
 
     // 更新显示
     const intervalName = intervalDefinitions[intervalType].name;
     const directionText = directionSetting === 'random'
         ? `(随机 ${actualDirection === 'ascending' ? '上行' : '下行'})`
         : (actualDirection === 'ascending' ? '(上行)' : '(下行)');
-    document.getElementById('intervalPlayingContent').innerHTML = `${formatIntervalDisplayHtml(startNote, target.display, target.octaveOffset)} ${directionText} ${intervalName}`;
+    const displayHtml = actualDirection === 'descending'
+        ? formatIntervalDisplayHtml(targetUp.display, startNote, 0)
+        : formatIntervalDisplayHtml(startNote, targetUp.display, targetUp.octaveOffset);
+    document.getElementById('intervalPlayingContent').innerHTML = `${displayHtml} ${directionText} ${intervalName}`;
 
     // 不显示“播放音程: ...”状态提示（避免占位干扰界面）
 }
@@ -1364,8 +1605,8 @@ function randomIntervalButtonClick() {
             ? (Math.random() > 0.5 ? 'ascending' : 'descending')
             : directionSetting;
 
-        const target = computeIntervalTarget(randomNote, semitones, actualDirection);
-        if (!target || !isNaturalJianpu(target.display)) continue;
+        const targetUp = computeIntervalTarget(randomNote, semitones, 'ascending');
+        if (!targetUp || !isNaturalJianpu(targetUp.display)) continue;
 
         document.getElementById('intervalType').value = randomInterval;
         document.getElementById('intervalStartNote').value = randomNote;
@@ -1473,22 +1714,33 @@ function playGeneratedInterval(note1, semitones, level) {
         ? (Math.random() > 0.5 ? 'ascending' : 'descending')
         : directionSetting;
 
-    const target = computeIntervalTarget(note1, semitones, actualDirection);
-    if (!target) {
+    const targetUp = computeIntervalTarget(note1, semitones, 'ascending');
+    if (!targetUp) {
         showIntervalStatus('无法生成该音程！', 'error');
         return;
     }
 
-    const level2 = level + target.octaveOffset;
-    playInterval(
-        note1,
-        target.audioNote,
-        { level1: level, level2: target.audioFlat ? `${level2}b` : level2 },
-        sequential
-    );
+    const targetUpLevel = level + targetUp.octaveOffset;
+    const targetUpLevel2 = targetUp.audioFlat ? `${targetUpLevel}b` : targetUpLevel;
+
+    if (actualDirection === 'descending') {
+        playInterval(
+            targetUp.audioNote,
+            note1,
+            { level1: targetUpLevel2, level2: level },
+            sequential
+        );
+    } else {
+        playInterval(
+            note1,
+            targetUp.audioNote,
+            { level1: level, level2: targetUpLevel2 },
+            sequential
+        );
+    }
 
     intervalTrainingState.currentNote1 = note1;
-    intervalTrainingState.currentNote2 = target.display;
+    intervalTrainingState.currentNote2 = targetUp.display;
 
     // 识别音程
     intervalTrainingState.currentIntervalType = identifyInterval(semitones);
@@ -1497,7 +1749,10 @@ function playGeneratedInterval(note1, semitones, level) {
     const directionText = directionSetting === 'random'
         ? `(随机 ${actualDirection === 'ascending' ? '上行' : '下行'})`
         : (actualDirection === 'ascending' ? '(上行)' : '(下行)');
-    document.getElementById('intervalPlayingContent').innerHTML = `${formatIntervalDisplayHtml(note1, target.display, target.octaveOffset)} ${directionText}`;
+    const displayHtml = actualDirection === 'descending'
+        ? formatIntervalDisplayHtml(targetUp.display, note1, 0)
+        : formatIntervalDisplayHtml(note1, targetUp.display, targetUp.octaveOffset);
+    document.getElementById('intervalPlayingContent').innerHTML = `${displayHtml} ${directionText}`;
     showIntervalStatus(`请识别音程 ${directionText}`, 'info');
 }
 
@@ -1554,6 +1809,8 @@ function setPlayDirection(direction, buttonElement) {
         btn.classList.remove('active');
     });
     buttonElement.classList.add('active');
+
+    scheduleSaveAppSettings();
 }
 
 // 全选所有音程范围
@@ -1576,4 +1833,6 @@ function deselectAllIntervalRanges() {
 // 在DOMContentLoaded事件中初始化音程训练
 document.addEventListener('DOMContentLoaded', () => {
     initIntervalTraining();
+    loadAppSettings();
+    initAutoSaveForSettings();
 }); 

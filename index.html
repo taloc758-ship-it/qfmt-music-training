@@ -255,6 +255,17 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="random-seq-bar">
+                        <div class="random-seq-controls">
+                            <span class="label">随机组合</span>
+                            <label for="randomSeqLen">长度</label>
+                            <input type="number" id="randomSeqLen" class="mini-input" value="6" min="2" max="50">
+                            <button id="randomSeqButton" class="btn secondary">生成</button>
+                            <button id="playRandomSeqButton" class="btn primary">播放</button>
+                        </div>
+                        <div id="randomSeqDisplay" class="random-seq-display"></div>
+                    </div>
                     
                     <div class="table-container notes-table">
                         <table id="notesTable" class="data-grid">
