@@ -1370,7 +1370,9 @@ let intervalTrainingState = {
     currentNote2: null,
     currentIntervalType: null,
     isWaiting: false,
-    playDirection: 'ascending' // 'ascending', 'descending', 'random'
+    playDirection: 'ascending', // 'ascending', 'descending', 'random'
+    lastActualDirection: null,
+    lastWasRandom: false
 };
 
 function getNormalizedPositionAndOctaveOffset(rawPosition) {
@@ -1436,6 +1438,20 @@ function formatIntervalNoteWithDotsHtml(jianpuText, octaveOffset) {
 
 function formatIntervalDisplayHtml(note1Jianpu, note2Jianpu, note2OctaveOffset) {
     return `<span class="interval-display">${formatIntervalNoteWithDotsHtml(note1Jianpu, 0)}<span class="sep">-</span>${formatIntervalNoteWithDotsHtml(note2Jianpu, note2OctaveOffset)}</span>`;
+}
+
+function formatIntervalDisplayHtmlWithOffsets(note1Jianpu, note1OctaveOffset, note2Jianpu, note2OctaveOffset) {
+    return `<span class="interval-display">${formatIntervalNoteWithDotsHtml(note1Jianpu, note1OctaveOffset)}<span class="sep">-</span>${formatIntervalNoteWithDotsHtml(note2Jianpu, note2OctaveOffset)}</span>`;
+}
+
+function getAudioDigitFromDisplay(display) {
+    return display && display.startsWith('b') ? display.slice(1) : display;
+}
+
+function normalizeOctaveOffsets(offsetA, offsetB) {
+    const minOffset = Math.min(offsetA, offsetB);
+    const shift = minOffset < 0 ? -minOffset : 0;
+    return { a: offsetA + shift, b: offsetB + shift };
 }
 
 // 初始化音程训练
@@ -1533,49 +1549,40 @@ function playIntervalButtonClick(actualDirectionOverride) {
 
     const directionSetting = intervalTrainingState.playDirection;
     const actualDirection = actualDirectionOverride ?? (directionSetting === 'random'
-        ? (Math.random() > 0.5 ? 'ascending' : 'descending')
+        ? (intervalTrainingState.lastWasRandom && (intervalTrainingState.lastActualDirection === 'ascending' || intervalTrainingState.lastActualDirection === 'descending')
+            ? intervalTrainingState.lastActualDirection
+            : (Math.random() > 0.5 ? 'ascending' : 'descending'))
         : directionSetting);
 
-    // 统一先按“上行”计算目标音；下行仅改变播放/显示顺序（高->低）
-    const targetUp = computeIntervalTarget(startNote, semitones, 'ascending');
-    if (!targetUp) {
+    const target = computeIntervalTarget(startNote, semitones, actualDirection);
+    if (!target) {
         showIntervalStatus('无法生成该音程！', 'error');
         return;
     }
 
+    intervalTrainingState.lastActualDirection = actualDirection;
+
     intervalTrainingState.currentNote1 = startNote;
-    intervalTrainingState.currentNote2 = targetUp.display;
+    intervalTrainingState.currentNote2 = target.display;
     intervalTrainingState.currentIntervalType = intervalType;
+    intervalTrainingState.lastWasRandom = false;
 
-    const targetUpLevel = level + targetUp.octaveOffset;
-    const targetUpLevel2 = targetUp.audioFlat ? `${targetUpLevel}b` : targetUpLevel;
+    // 规范化八度偏移：确保最低音为 0（下行时把“起始音”整体抬高，用上方点表示）
+    const offsets = normalizeOctaveOffsets(0, target.octaveOffset);
+    const level1 = level + offsets.a;
+    const level2Raw = level + offsets.b;
+    const level2 = target.audioFlat ? `${level2Raw}b` : level2Raw;
+    const note2Digit = getAudioDigitFromDisplay(target.display);
 
-    if (actualDirection === 'descending') {
-        // 下行：高音 -> 低音
-        playInterval(
-            targetUp.audioNote,
-            startNote,
-            { level1: targetUpLevel2, level2: level },
-            sequential
-        );
-    } else {
-        // 上行：低音 -> 高音
-        playInterval(
-            startNote,
-            targetUp.audioNote,
-            { level1: level, level2: targetUpLevel2 },
-            sequential
-        );
-    }
+    // 播放顺序与显示一致：起始音 -> 目标音
+    playInterval(startNote, note2Digit, { level1, level2 }, sequential);
 
     // 更新显示
     const intervalName = intervalDefinitions[intervalType].name;
     const directionText = directionSetting === 'random'
         ? `(随机 ${actualDirection === 'ascending' ? '上行' : '下行'})`
         : (actualDirection === 'ascending' ? '(上行)' : '(下行)');
-    const displayHtml = actualDirection === 'descending'
-        ? formatIntervalDisplayHtml(targetUp.display, startNote, 0)
-        : formatIntervalDisplayHtml(startNote, targetUp.display, targetUp.octaveOffset);
+    const displayHtml = formatIntervalDisplayHtmlWithOffsets(startNote, offsets.a, target.display, offsets.b);
     document.getElementById('intervalPlayingContent').innerHTML = `${displayHtml} ${directionText} ${intervalName}`;
 
     // 不显示“播放音程: ...”状态提示（避免占位干扰界面）
@@ -1605,12 +1612,14 @@ function randomIntervalButtonClick() {
             ? (Math.random() > 0.5 ? 'ascending' : 'descending')
             : directionSetting;
 
-        const targetUp = computeIntervalTarget(randomNote, semitones, 'ascending');
-        if (!targetUp || !isNaturalJianpu(targetUp.display)) continue;
+        const target = computeIntervalTarget(randomNote, semitones, actualDirection);
+        if (!target || !isNaturalJianpu(target.display)) continue;
 
         document.getElementById('intervalType').value = randomInterval;
         document.getElementById('intervalStartNote').value = randomNote;
         setTimeout(() => {
+            intervalTrainingState.lastWasRandom = true;
+            intervalTrainingState.lastActualDirection = actualDirection;
             playIntervalButtonClick(actualDirection);
             intervalTrainingState.isWaiting = true;
         }, 100);
@@ -1714,33 +1723,21 @@ function playGeneratedInterval(note1, semitones, level) {
         ? (Math.random() > 0.5 ? 'ascending' : 'descending')
         : directionSetting;
 
-    const targetUp = computeIntervalTarget(note1, semitones, 'ascending');
-    if (!targetUp) {
+    const target = computeIntervalTarget(note1, semitones, actualDirection);
+    if (!target) {
         showIntervalStatus('无法生成该音程！', 'error');
         return;
     }
 
-    const targetUpLevel = level + targetUp.octaveOffset;
-    const targetUpLevel2 = targetUp.audioFlat ? `${targetUpLevel}b` : targetUpLevel;
-
-    if (actualDirection === 'descending') {
-        playInterval(
-            targetUp.audioNote,
-            note1,
-            { level1: targetUpLevel2, level2: level },
-            sequential
-        );
-    } else {
-        playInterval(
-            note1,
-            targetUp.audioNote,
-            { level1: level, level2: targetUpLevel2 },
-            sequential
-        );
-    }
+    const offsets = normalizeOctaveOffsets(0, target.octaveOffset);
+    const level1 = level + offsets.a;
+    const level2Raw = level + offsets.b;
+    const level2 = target.audioFlat ? `${level2Raw}b` : level2Raw;
+    const note2Digit = getAudioDigitFromDisplay(target.display);
+    playInterval(note1, note2Digit, { level1, level2 }, sequential);
 
     intervalTrainingState.currentNote1 = note1;
-    intervalTrainingState.currentNote2 = targetUp.display;
+    intervalTrainingState.currentNote2 = target.display;
 
     // 识别音程
     intervalTrainingState.currentIntervalType = identifyInterval(semitones);
@@ -1749,9 +1746,7 @@ function playGeneratedInterval(note1, semitones, level) {
     const directionText = directionSetting === 'random'
         ? `(随机 ${actualDirection === 'ascending' ? '上行' : '下行'})`
         : (actualDirection === 'ascending' ? '(上行)' : '(下行)');
-    const displayHtml = actualDirection === 'descending'
-        ? formatIntervalDisplayHtml(targetUp.display, note1, 0)
-        : formatIntervalDisplayHtml(note1, targetUp.display, targetUp.octaveOffset);
+    const displayHtml = formatIntervalDisplayHtmlWithOffsets(note1, offsets.a, target.display, offsets.b);
     document.getElementById('intervalPlayingContent').innerHTML = `${displayHtml} ${directionText}`;
     showIntervalStatus(`请识别音程 ${directionText}`, 'info');
 }
@@ -1803,6 +1798,7 @@ function getSelectedIntervalRanges() {
 // 设置播放方向
 function setPlayDirection(direction, buttonElement) {
     intervalTrainingState.playDirection = direction;
+    intervalTrainingState.lastWasRandom = false;
 
     // 更新按钮样式
     document.querySelectorAll('.direction-btn').forEach(btn => {

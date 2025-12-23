@@ -548,6 +548,7 @@ input:checked + .slider:before {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .random-seq-controls label {
@@ -576,6 +577,15 @@ input:checked + .slider:before {
     background: rgba(74, 107, 220, 0.04);
     display: flex;
     align-items: center;
+}
+
+.random-seq-display .note-with-dots {
+    height: 40px;
+    min-width: 18px;
+}
+
+.random-seq-display .note {
+    font-size: 1.6rem;
 }
 
 .action-buttons {
@@ -663,10 +673,37 @@ input:checked + .slider:before {
 @media (max-width: 768px) {
     .main-content {
         grid-template-columns: 1fr;
+        padding: 0.75rem;
     }
     
     .content-area, .pair-combinations {
         grid-column: span 1;
+    }
+
+    .control-panel,
+    .content-area,
+    .pair-combinations {
+        padding: 0.75rem;
+    }
+
+    .data-grid th,
+    .data-grid td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .random-seq-controls .btn {
+        flex: 1 1 120px;
+    }
+
+    .random-seq-display {
+        padding: 8px;
     }
 }
 
