@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QFMT - 音乐训练</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>QFMT - 音乐训练</title>
+        <meta name="theme-color" content="#4a6bdc">
+        <link rel="manifest" href="manifest.webmanifest">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="QFMT">
+        <link rel="stylesheet" href="styles.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    </head>
 <body>
     <div class="app-container">
         <header class="app-header">
@@ -575,6 +579,10 @@
 
         <footer class="app-footer">
             <p>QFMT 音乐训练 - HTML版 &copy; 2025</p>
+            <div style="margin-top: 0.5rem;">
+                <button id="cacheAudioBtn" class="btn secondary" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">缓存音频</button>
+            </div>
+            <div id="pwaStatus" style="margin-top: 0.5rem; font-size: 0.85rem;"></div>
         </footer>
     </div>
 

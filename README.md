@@ -70,3 +70,24 @@ The application stores notes in the browser's local storage, so they persist bet
 ## Browser Compatibility
 
 This application works best in modern browsers that support the Web Audio API and ES6 JavaScript features. 
+
+## LAN Phone Access + Offline (PWA)
+
+Service Worker (offline cache) requires a **secure context**:
+- Works on `http://localhost/...` without certificates
+- For **LAN phone access** (e.g. `https://192.168.x.x:8443/`), you need **HTTPS with a trusted certificate** on the phone
+
+### Option A: Recommended (mkcert)
+
+1. Install `mkcert` on your PC and create a local CA.
+2. Generate a certificate for your LAN IP (replace IP):
+   - `mkcert 192.168.1.3`
+   - This creates `192.168.1.3.pem` and `192.168.1.3-key.pem`
+3. Install the mkcert root CA on your phone (so the cert is trusted):
+   - On PC: `mkcert -CAROOT` to locate the root CA
+   - Copy `rootCA.pem` to phone and install it as a user certificate (Android)
+4. Start HTTPS server:
+   - `node server.js --host 0.0.0.0 --port 8443 --cert 192.168.1.3.pem --key 192.168.1.3-key.pem`
+5. On phone open:
+   - `https://192.168.1.3:8443/`
+6. Visit once online, then you can go offline and refresh (core files are cached; audio is cached after first play).

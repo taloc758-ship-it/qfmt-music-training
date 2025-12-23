@@ -10,6 +10,68 @@ const basePath = 'piano/'; // Change this to the path where audio files are stor
 const SETTINGS_KEY = 'qfmt.settings.v1';
 let saveSettingsTimer = null;
 
+// iOS audio: use Web Audio API to avoid silent-mode/autoplay quirks
+let audioContext = null;
+const audioBufferCache = new Map();
+let audioUnlockRequested = false;
+
+async function ensureAudioContext() {
+    if (audioContext && audioContext.state === 'running') return audioContext;
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+
+    if (!audioContext) audioContext = new Ctx();
+
+    if (audioContext.state !== 'running') {
+        try {
+            await audioContext.resume();
+        } catch {
+            // ignore, will retry on next user gesture
+        }
+    }
+
+    return audioContext;
+}
+
+async function getAudioBuffer(url) {
+    const cached = audioBufferCache.get(url);
+    if (cached) return cached;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const ctx = await ensureAudioContext();
+    if (!ctx) throw new Error('AudioContext not available');
+
+    const buffer = await new Promise((resolve, reject) => {
+        ctx.decodeAudioData(arrayBuffer, resolve, reject);
+    });
+    audioBufferCache.set(url, buffer);
+    return buffer;
+}
+
+function playBuffer(url) {
+    (async () => {
+        const ctx = await ensureAudioContext();
+        if (!ctx || ctx.state !== 'running') throw new Error('AudioContext not running');
+        const buffer = await getAudioBuffer(url);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start();
+    })().catch(error => {
+        console.error('WebAudio play failed:', error);
+        // fallback to HTMLAudio
+        try {
+            const audio = new Audio();
+            audio.src = url;
+            audio.play().catch(() => {});
+        } catch {}
+    });
+}
+
 // DOM Elements
 const keyInput = document.getElementById('keyInput');
 const levelInput = document.getElementById('levelInput');
@@ -185,9 +247,184 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 组合表内单个音符可点击发声（包含随机组合显示区）
     initCombinationNoteClickToPlay();
+
+    // iOS: unlock audio on first user interaction
+    if (!audioUnlockRequested) {
+        audioUnlockRequested = true;
+        const unlock = () => { ensureAudioContext(); };
+        window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+        window.addEventListener('touchend', unlock, { once: true, passive: true });
+    }
     
     // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyDown);
+});
+
+// PWA: register service worker for offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).catch(err => {
+            console.warn('Service worker registration failed:', err);
+        });
+    });
+}
+
+async function renderPwaStatus() {
+    const el = document.getElementById('pwaStatus');
+    if (!el) return;
+
+    const lines = [];
+    const isSecure = window.isSecureContext;
+    lines.push(`SecureContext: ${isSecure ? 'yes' : 'no'}`);
+
+    if (!('serviceWorker' in navigator)) {
+        lines.push('ServiceWorker: not supported');
+        el.textContent = lines.join(' | ');
+        return;
+    }
+
+    const controlled = !!navigator.serviceWorker.controller;
+    lines.push(`SW controlled: ${controlled ? 'yes' : 'no'}`);
+
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        if (!reg) {
+            lines.push('SW registration: none');
+        } else {
+            lines.push(`SW scope: ${reg.scope}`);
+            lines.push(`SW state: ${reg.active?.state || reg.installing?.state || reg.waiting?.state || 'unknown'}`);
+        }
+
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            lines.push(`Caches: ${keys.length}`);
+
+            const runtimeKey = keys.find(k => k.includes('-runtime'));
+            if (runtimeKey) {
+                const cache = await caches.open(runtimeKey);
+                const requests = await cache.keys();
+                const mp3Count = requests.filter(r => r.url.endsWith('.mp3')).length;
+                lines.push(`Cached mp3: ${mp3Count}`);
+            }
+        }
+    } catch (e) {
+        lines.push(`SW error: ${String(e?.message || e)}`);
+    }
+
+    el.textContent = lines.join(' | ');
+}
+
+function getSwVersion() {
+    if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) return Promise.resolve(null);
+
+    return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => resolve(null), 1500);
+        channel.port1.onmessage = (event) => {
+            clearTimeout(timer);
+            resolve(event?.data?.version || null);
+        };
+        controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+    });
+}
+
+async function cacheAllAudioFromManifest(options = {}) {
+    const btn = document.getElementById('cacheAudioBtn');
+    const setBtn = (text, disabled) => {
+        if (!btn) return;
+        btn.textContent = text;
+        btn.disabled = disabled;
+    };
+
+    try {
+        const silent = !!options.silent;
+        const inputFiles = Array.isArray(options.files) ? options.files : null;
+
+        let files = inputFiles;
+        if (!files) {
+            setBtn('读取清单...', true);
+            const resp = await fetch('/piano-manifest.json', { cache: 'no-store' });
+            if (!resp.ok) throw new Error(`manifest HTTP ${resp.status}`);
+            const data = await resp.json();
+            files = Array.isArray(data.files) ? data.files : [];
+        }
+        if (files.length === 0) throw new Error('manifest empty');
+
+        setBtn(`缓存中 0/${files.length}`, true);
+
+        // Fetch sequentially to be gentle on iOS memory/network
+        let done = 0;
+        for (const file of files) {
+            const rel = String(file).replace(/^\/+/, '');
+            await fetch(`/${rel}`, { cache: 'reload' });
+            done++;
+            if (done % 5 === 0) setBtn(`缓存中 ${done}/${files.length}`, true);
+        }
+
+        setBtn('缓存音频(完成)', false);
+        await renderPwaStatus();
+    } catch (e) {
+        console.warn('Cache audio failed:', e);
+        setBtn('缓存音频(失败)', false);
+        if (!options.silent) alert(`缓存音频失败：${String(e?.message || e)}`);
+    }
+}
+
+async function autoCacheAllAudioIfNeeded() {
+    try {
+        if (!('serviceWorker' in navigator) || !('caches' in window)) return;
+        await navigator.serviceWorker.ready;
+
+        const [version, resp] = await Promise.all([
+            getSwVersion(),
+            fetch('/piano-manifest.json', { cache: 'no-store' })
+        ]);
+        if (!resp.ok) return;
+
+        const data = await resp.json();
+        const files = Array.isArray(data.files) ? data.files : [];
+        if (files.length === 0) return;
+
+        const cacheKeys = await caches.keys();
+        const runtimeKey = cacheKeys.find(k => k.includes('-runtime')) || '';
+        const cachedVersionKey = `qfmt.audioCacheVersion`;
+        const cachedVersion = localStorage.getItem(cachedVersionKey);
+
+        if (version && cachedVersion === version) return;
+
+        if (runtimeKey) {
+            const cache = await caches.open(runtimeKey);
+            const requests = await cache.keys();
+            const mp3Count = requests.filter(r => r.url.endsWith('.mp3')).length;
+            if (mp3Count >= files.length) {
+                if (version) localStorage.setItem(cachedVersionKey, version);
+                return;
+            }
+        }
+
+        await cacheAllAudioFromManifest({ silent: true, files });
+        if (version) localStorage.setItem(cachedVersionKey, version);
+    } catch (e) {
+        console.warn('Auto cache audio failed:', e);
+    }
+}
+
+window.addEventListener('load', () => {
+    const btn = document.getElementById('cacheAudioBtn');
+    if (btn) btn.addEventListener('click', cacheAllAudioFromManifest);
+});
+
+window.addEventListener('load', () => {
+    renderPwaStatus();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('controllerchange', renderPwaStatus);
+        navigator.serviceWorker.addEventListener('message', renderPwaStatus);
+    }
+
+    // Default: cache all mp3 for offline use.
+    autoCacheAllAudioIfNeeded();
 });
 
 // 初始化虚拟键盘功能
@@ -1000,17 +1237,24 @@ function playSounds(keys, level) {
     showStatus(`正在播放: ${plainTextString}`, 'success');
     
     // Play each sound with a delay
+    // iOS Safari: first audio must be triggered synchronously by a user gesture
     keys.forEach((key, index) => {
-        setTimeout(() => {
+        const playOne = () => {
             playSound(key.note, level + key.offset);
-            
+
             // If playStdCheckbox is checked, also play the standard sound
             if (playStdCheckbox.checked) {
                 setTimeout(() => {
                     playSound(key.note, level);
                 }, playTimeInMilliseconds / 2);
             }
-        }, index * playTimeInternalMilliseconds);
+        };
+
+        if (index === 0) {
+            playOne();
+        } else {
+            setTimeout(playOne, index * playTimeInternalMilliseconds);
+        }
     });
 }
 
@@ -1019,21 +1263,19 @@ function playSound(key, level) {
     try {
         // Convert key to the appropriate format
         const note = toNote(key);
-        
-        // Create an audio element
-        const audio = new Audio();
-        
-        // Set the source to the appropriate sound file
-        audio.src = `${basePath}${note}${level}.mp3`;
-        
-        // Play the sound
-        audio.play().catch(error => {
-            console.error('Error playing sound:', error);
-            showStatus(`无法播放音符 ${note}${level}`, 'error');
-        });
+
+        const url = `${basePath}${note}${level}.mp3`;
+
+        // Prefer WebAudio (more reliable on iOS / silent mode); includes HTMLAudio fallback internally.
+        playBuffer(url);
     } catch (error) {
         console.error('Error playing sound:', error);
-        showStatus('播放错误：' + error.message, 'error');
+        const currentTab = document.querySelector('.main-content:not(.hidden)');
+        if (currentTab && currentTab.id === 'interval-tab' && typeof showIntervalStatus === 'function') {
+            showIntervalStatus('播放错误：' + error.message, 'error');
+        } else {
+            showStatus('播放错误：' + error.message, 'error');
+        }
     }
 }
 
@@ -1617,12 +1859,10 @@ function randomIntervalButtonClick() {
 
         document.getElementById('intervalType').value = randomInterval;
         document.getElementById('intervalStartNote').value = randomNote;
-        setTimeout(() => {
-            intervalTrainingState.lastWasRandom = true;
-            intervalTrainingState.lastActualDirection = actualDirection;
-            playIntervalButtonClick(actualDirection);
-            intervalTrainingState.isWaiting = true;
-        }, 100);
+        intervalTrainingState.lastWasRandom = true;
+        intervalTrainingState.lastActualDirection = actualDirection;
+        playIntervalButtonClick(actualDirection);
+        intervalTrainingState.isWaiting = true;
         return;
     }
 
