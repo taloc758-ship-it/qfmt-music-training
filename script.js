@@ -425,6 +425,11 @@ window.addEventListener('load', () => {
 
     // Default: cache all mp3 for offline use.
     autoCacheAllAudioIfNeeded();
+
+    relocateRandomSeqBar();
+    const mq = window.matchMedia('(min-width: 992px)');
+    if (mq.addEventListener) mq.addEventListener('change', relocateRandomSeqBar);
+    else if (mq.addListener) mq.addListener(relocateRandomSeqBar);
 });
 
 // 初始化虚拟键盘功能
@@ -878,11 +883,18 @@ function randomSeqButtonClick() {
         return;
     }
 
-    const pool = parseString(source);
-    if (pool.length === 0) {
+    const parsed = parseString(source);
+    if (parsed.length === 0) {
         showStatus('音组解析失败！', 'error');
         return;
     }
+
+    const uniq = new Map();
+    for (const item of parsed) {
+        const key = `${item.note}:${item.offset}`;
+        if (!uniq.has(key)) uniq.set(key, item);
+    }
+    const pool = Array.from(uniq.values());
 
     const requestedLen = parseInt(randomSeqLenInput?.value) || 6;
     const len = Math.max(2, Math.min(50, requestedLen));
@@ -893,22 +905,37 @@ function randomSeqButtonClick() {
         return;
     }
 
-    const sequence = [];
-    let prev = null;
-    const maxAttempts = 3000;
-    let attempts = 0;
+    let sequence = [];
+    if (len <= pool.length) {
+        sequence = shuffleArray(pool).slice(0, len);
+    } else {
+        const result = [];
+        let last = null;
+        let safety = 0;
 
-    while (sequence.length < len && attempts < maxAttempts) {
-        attempts++;
-        const candidate = pool[Math.floor(Math.random() * pool.length)];
-        if (prev && candidate.note === prev.note && candidate.offset === prev.offset) continue;
-        sequence.push(candidate);
-        prev = candidate;
-    }
+        while (result.length < len && safety < 2000) {
+            safety++;
+            const batch = shuffleArray(pool);
 
-    if (sequence.length < len) {
-        showStatus('随机组合生成失败（相邻不相同约束过强），请增大音组内容。', 'error');
-        return;
+            if (last && batch.length > 1 && batch[0].note === last.note && batch[0].offset === last.offset) {
+                const idx = batch.findIndex(n => n.note !== last.note || n.offset !== last.offset);
+                if (idx > 0) [batch[0], batch[idx]] = [batch[idx], batch[0]];
+            }
+
+            for (const item of batch) {
+                if (result.length >= len) break;
+                if (last && item.note === last.note && item.offset === last.offset) continue;
+                result.push(item);
+                last = item;
+            }
+        }
+
+        if (result.length < len) {
+            showStatus('随机组合生成失败，请增大音组内容。', 'error');
+            return;
+        }
+
+        sequence = result;
     }
 
     const plainText = sequence.map(n => `${getSign(n.offset)}${n.note}`).join('');
@@ -921,6 +948,17 @@ function randomSeqButtonClick() {
     lastComb = sequence;
     selectedCombination = plainText;
     showStatus('已生成随机组合', 'success');
+}
+
+function relocateRandomSeqBar() {
+    const bar = document.querySelector('.random-seq-bar');
+    const hostMobile = document.getElementById('randomSeqHostMobile');
+    const hostDesktop = document.getElementById('randomSeqHostDesktop');
+    if (!bar || !hostMobile || !hostDesktop) return;
+
+    const isDesktop = window.matchMedia('(min-width: 992px)').matches;
+    const targetHost = isDesktop ? hostDesktop : hostMobile;
+    if (bar.parentElement !== targetHost) targetHost.appendChild(bar);
 }
 
 function playRandomSeqButtonClick() {
