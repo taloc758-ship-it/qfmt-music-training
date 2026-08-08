@@ -7,6 +7,7 @@ let selectedNote = null;
 let selectedCombination = null;
 let lastComb = null;
 const basePath = 'piano/'; // Change this to the path where audio files are stored
+const appUrl = (path = '') => new URL(path, document.baseURI).toString();
 const SETTINGS_KEY = 'qfmt.settings.v1';
 let saveSettingsTimer = null;
 
@@ -263,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA: register service worker for offline support
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).catch(err => {
+        navigator.serviceWorker.register('service-worker.js', { scope: './' }).catch(err => {
             console.warn('Service worker registration failed:', err);
         });
     });
@@ -287,7 +288,7 @@ async function renderPwaStatus() {
     lines.push(`SW controlled: ${controlled ? 'yes' : 'no'}`);
 
     try {
-        const reg = await navigator.serviceWorker.getRegistration('/');
+        const reg = await navigator.serviceWorker.getRegistration();
         if (!reg) {
             lines.push('SW registration: none');
         } else {
@@ -345,7 +346,7 @@ async function cacheAllAudioFromManifest(options = {}) {
         let files = inputFiles;
         if (!files) {
             setBtn('读取清单...', true);
-            const resp = await fetch('/piano-manifest.json', { cache: 'no-store' });
+            const resp = await fetch(appUrl('piano-manifest.json'), { cache: 'no-store' });
             if (!resp.ok) throw new Error(`manifest HTTP ${resp.status}`);
             const data = await resp.json();
             files = Array.isArray(data.files) ? data.files : [];
@@ -358,7 +359,7 @@ async function cacheAllAudioFromManifest(options = {}) {
         let done = 0;
         for (const file of files) {
             const rel = String(file).replace(/^\/+/, '');
-            await fetch(`/${rel}`, { cache: 'reload' });
+            await fetch(appUrl(rel), { cache: 'reload' });
             done++;
             if (done % 5 === 0) setBtn(`缓存中 ${done}/${files.length}`, true);
         }
@@ -379,7 +380,7 @@ async function autoCacheAllAudioIfNeeded() {
 
         const [version, resp] = await Promise.all([
             getSwVersion(),
-            fetch('/piano-manifest.json', { cache: 'no-store' })
+            fetch(appUrl('piano-manifest.json'), { cache: 'no-store' })
         ]);
         if (!resp.ok) return;
 

@@ -31,3 +31,7 @@ packages/
 *.user
 ClientUI/nul
 Lib/
+
+# Local HTTPS development material (never publish these)
+*.pem
+mkcert.exe

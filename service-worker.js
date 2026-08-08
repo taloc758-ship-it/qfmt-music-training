@@ -1,31 +1,28 @@
 /* PWA service worker for offline support */
 
-const CACHE_VERSION = 'qfmt-v7';
+const CACHE_VERSION = 'qfmt-v8';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const APP_BASE_URL = self.registration.scope;
+const appUrl = (path = '') => new URL(path, APP_BASE_URL).toString();
 
 const APP_SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/script.js',
-  '/notes.txt',
-  '/piano-manifest.json',
-  '/manifest.webmanifest',
-  '/icon.svg',
-  '/service-worker.js'
-];
-
-function normalizePath(input) {
-  const rel = String(input || '').replace(/^\/+/, '');
-  return `/${rel}`;
-}
+  '',
+  'index.html',
+  'styles.css',
+  'script.js',
+  'notes.txt',
+  'piano-manifest.json',
+  'manifest.webmanifest',
+  'icon.svg',
+  'service-worker.js'
+].map(appUrl);
 
 async function precachePianoAudio({ timeBudgetMs } = {}) {
   const deadline = Number.isFinite(timeBudgetMs) ? Date.now() + timeBudgetMs : null;
 
   try {
-    const resp = await fetch('/piano-manifest.json', { cache: 'no-store' });
+    const resp = await fetch(appUrl('piano-manifest.json'), { cache: 'no-store' });
     if (!resp.ok) return;
 
     const data = await resp.json();
@@ -35,8 +32,7 @@ async function precachePianoAudio({ timeBudgetMs } = {}) {
     const cache = await caches.open(RUNTIME_CACHE);
     for (const file of files) {
       if (deadline && Date.now() > deadline) break;
-      const path = normalizePath(file);
-      const req = new Request(path, { cache: 'reload' });
+      const req = new Request(appUrl(String(file).replace(/^\/+/, '')), { cache: 'reload' });
 
       const hit = await cache.match(req, { ignoreSearch: true });
       if (hit) continue;
@@ -112,14 +108,14 @@ self.addEventListener('fetch', (event) => {
         // iOS may take a long time to fail network when offline; returning cached HTML immediately avoids the offline error page.
         const shellCache = await caches.open(APP_SHELL_CACHE);
         const cached =
-          (await shellCache.match('/index.html', { ignoreSearch: true })) ||
-          (await caches.match('/index.html', { ignoreSearch: true })) ||
-          (await caches.match('/', { ignoreSearch: true }));
+          (await shellCache.match(appUrl('index.html'), { ignoreSearch: true })) ||
+          (await caches.match(appUrl('index.html'), { ignoreSearch: true })) ||
+          (await caches.match(appUrl(), { ignoreSearch: true }));
 
         const update = fetch(request)
           .then((fresh) => {
             if (fresh && fresh.ok) {
-              shellCache.put('/index.html', fresh.clone());
+              shellCache.put(appUrl('index.html'), fresh.clone());
             }
             return fresh;
           })
@@ -147,8 +143,7 @@ self.addEventListener('fetch', (event) => {
       } catch (error) {
         // Fallback to app shell cache for same-origin core assets
         if (url.origin === self.location.origin) {
-          const fallback = await caches.match(url.pathname, { ignoreSearch: true })
-            || await caches.match(url.pathname.replace(/^\//, './'), { ignoreSearch: true });
+          const fallback = await caches.match(url.href, { ignoreSearch: true });
           if (fallback) return fallback;
         }
         throw error;
