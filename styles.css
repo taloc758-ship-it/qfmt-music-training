@@ -1408,3 +1408,514 @@ input:checked + .slider:before {
 .direction-btn i {
     font-size: 1rem;
 } 
+
+/* ==================== 和弦进行 ==================== */
+#chord-tab.main-content {
+    display: block;
+    padding: 1.25rem;
+}
+
+.chord-workspace {
+    width: min(1120px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.chord-hero {
+    grid-column: 1 / -1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    padding: clamp(1.5rem, 4vw, 2.75rem);
+    color: #fff;
+    background:
+        radial-gradient(circle at 85% 22%, rgba(255, 224, 158, 0.38), transparent 22rem),
+        radial-gradient(circle at 18% 100%, rgba(118, 160, 255, 0.42), transparent 24rem),
+        linear-gradient(135deg, #243b8a 0%, #4968d5 56%, #7a57cf 100%);
+    border-radius: 20px;
+    box-shadow: 0 18px 40px rgba(50, 72, 158, 0.24);
+    min-width: 0;
+}
+
+.chord-hero::after {
+    content: '';
+    position: absolute;
+    right: -2.5rem;
+    bottom: -6.5rem;
+    width: 16rem;
+    height: 16rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.8rem rgba(255, 255, 255, 0.06), 0 0 0 4rem rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+}
+
+.chord-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.4rem;
+    color: #6e7b96;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+}
+
+.chord-hero .eyebrow {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.chord-hero h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 4vw, 2.45rem);
+    letter-spacing: -0.035em;
+    line-height: 1.16;
+}
+
+.chord-hero p:not(.eyebrow) {
+    max-width: 42rem;
+    margin: 0.85rem 0 0;
+    color: rgba(255, 255, 255, 0.83);
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+.chord-key-badge {
+    flex: 0 0 auto;
+    min-width: 142px;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 14px;
+    background: rgba(16, 28, 92, 0.2);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+}
+
+.chord-key-badge span,
+.chord-key-badge small {
+    display: block;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.72rem;
+}
+
+.chord-key-badge strong {
+    display: block;
+    margin: 0.2rem 0;
+    color: #fff;
+    font-size: 1.28rem;
+    letter-spacing: -0.02em;
+}
+
+.chord-controls-card,
+.chord-presets-card,
+.chord-preview-card {
+    border: 1px solid rgba(73, 98, 149, 0.13);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10px 30px rgba(41, 57, 92, 0.08);
+    min-width: 0;
+}
+
+.chord-controls-card {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1.7fr) minmax(6.25rem, 0.7fr) minmax(7rem, 0.9fr);
+    gap: 1rem;
+    grid-column: 1 / -1;
+    padding: 1.25rem;
+    align-items: end;
+}
+
+.chord-form-group {
+    min-width: 0;
+}
+
+.chord-form-group label {
+    display: block;
+    margin-bottom: 0.42rem;
+    color: #344260;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.chord-form-group small {
+    display: block;
+    margin-top: 0.42rem;
+    color: #8290a7;
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.chord-input-wrap {
+    position: relative;
+}
+
+.chord-input-wrap > i {
+    position: absolute;
+    top: 50%;
+    left: 0.85rem;
+    z-index: 1;
+    color: #6577d8;
+    transform: translateY(-50%);
+}
+
+.chord-input-wrap .form-control {
+    padding-left: 2.55rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.chord-controls-card .form-control {
+    min-height: 43px;
+    border-color: #d9e0ef;
+    border-radius: 10px;
+    color: #273654;
+    background: #fbfcff;
+}
+
+.chord-controls-card .form-control:focus {
+    border-color: #6175df;
+    box-shadow: 0 0 0 3px rgba(88, 111, 220, 0.14);
+}
+
+.chord-play-style {
+    grid-column: span 2;
+}
+
+.segmented-control {
+    display: inline-flex;
+    width: 100%;
+    padding: 0.2rem;
+    border: 1px solid #dce3f0;
+    border-radius: 10px;
+    background: #f2f5fa;
+}
+
+.play-style-btn {
+    flex: 1;
+    min-height: 39px;
+    padding: 0.45rem 0.55rem;
+    border: 0;
+    border-radius: 8px;
+    color: #718099;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.play-style-btn i {
+    margin-right: 0.32rem;
+}
+
+.play-style-btn:hover {
+    color: #435aca;
+}
+
+.play-style-btn.active {
+    color: #3449b8;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(39, 57, 114, 0.12);
+}
+
+.chord-action-row {
+    display: flex;
+    grid-column: span 1;
+    gap: 0.65rem;
+}
+
+.chord-action-row .btn {
+    min-height: 43px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.chord-play-button {
+    box-shadow: 0 7px 14px rgba(74, 107, 220, 0.23);
+}
+
+.chord-presets-card,
+.chord-preview-card {
+    min-height: 100%;
+    padding: 1.25rem;
+}
+
+.chord-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.chord-section-heading .eyebrow {
+    margin-bottom: 0.15rem;
+}
+
+.chord-section-heading h3 {
+    color: #2d3b59;
+    font-size: 1.14rem;
+    line-height: 1.25;
+}
+
+.chord-section-heading > span {
+    margin-top: 0.2rem;
+    color: #91a0b7;
+    font-size: 0.73rem;
+    text-align: right;
+}
+
+.chord-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.chord-preset {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 85px;
+    padding: 0.8rem;
+    border: 1px solid #e0e6f0;
+    border-radius: 12px;
+    color: #6e7d96;
+    background: linear-gradient(145deg, #fff, #f7f9fc);
+    cursor: pointer;
+    font-size: 0.72rem;
+    text-align: left;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.chord-preset:hover {
+    border-color: #aebcf5;
+    box-shadow: 0 7px 15px rgba(60, 82, 163, 0.1);
+    transform: translateY(-2px);
+}
+
+.chord-preset.active {
+    border-color: #657be1;
+    color: #fff;
+    background: linear-gradient(135deg, #4f68d7, #7859c9);
+    box-shadow: 0 8px 17px rgba(80, 101, 207, 0.24);
+}
+
+.preset-number {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: #3b4d8e;
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.chord-preset.active .preset-number {
+    color: #fff;
+}
+
+.chord-preview {
+    display: flex;
+    align-items: center;
+    min-height: 104px;
+    gap: 0.42rem;
+    overflow-x: auto;
+    padding: 0.3rem 0.1rem 0.65rem;
+    scrollbar-width: thin;
+}
+
+.chord-step {
+    flex: 0 0 78px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 90px;
+    padding: 0.65rem 0.45rem;
+    border: 1px solid #dce4f1;
+    border-radius: 13px;
+    color: #66758e;
+    background: #fbfcff;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.chord-step:hover {
+    border-color: #9caef2;
+    background: #f4f6ff;
+    transform: translateY(-2px);
+}
+
+.chord-step.is-playing {
+    border-color: #536bda;
+    color: #fff;
+    background: linear-gradient(145deg, #4b67d5, #755ac9);
+    box-shadow: 0 8px 16px rgba(72, 95, 203, 0.26);
+    transform: translateY(-2px);
+}
+
+.chord-degree {
+    position: absolute;
+    top: 0.42rem;
+    left: 0.5rem;
+    color: #a4afc1;
+    font-size: 0.67rem;
+    font-weight: 800;
+}
+
+.chord-step.is-playing .chord-degree,
+.chord-step.is-playing small {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.chord-step strong {
+    color: #33497f;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+}
+
+.chord-step.is-playing strong {
+    color: #fff;
+}
+
+.chord-step small {
+    margin-top: 0.18rem;
+    color: #8390a5;
+    font-size: 0.65rem;
+    white-space: nowrap;
+}
+
+.chord-arrow {
+    flex: 0 0 auto;
+    color: #b4bdcf;
+    font-size: 0.72rem;
+}
+
+.chord-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: auto;
+    color: #9ca9bd;
+    font-size: 0.82rem;
+}
+
+.chord-playing-info {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 0.25rem;
+    padding: 0.72rem 0.82rem;
+    border-radius: 10px;
+    color: #546787;
+    background: #f2f5fc;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.chord-playing-info i {
+    color: #5c72db;
+}
+
+.chord-status-text {
+    min-height: 1.25rem;
+    margin-top: 0.55rem;
+    color: #5a6bd0;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.chord-status-text[data-type="error"] {
+    color: var(--danger-color);
+}
+
+.chord-status-text[data-type="success"] {
+    color: var(--success-color);
+}
+
+@media (max-width: 800px) {
+    #chord-tab.main-content {
+        padding: 0.75rem;
+    }
+
+    .chord-workspace {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .chord-hero,
+    .chord-controls-card,
+    .chord-presets-card,
+    .chord-preview-card {
+        width: 100%;
+        max-width: 100%;
+        grid-column: auto;
+    }
+
+    .chord-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 1.2rem;
+        border-radius: 16px;
+    }
+
+    .chord-key-badge {
+        width: 100%;
+    }
+
+    .chord-controls-card {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        padding: 1rem;
+    }
+
+    .chord-progression-field,
+    .chord-play-style,
+    .chord-action-row {
+        grid-column: 1 / -1;
+    }
+
+    .chord-presets-card,
+    .chord-preview-card {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 450px) {
+    .chord-controls-card {
+        grid-template-columns: 1fr;
+    }
+
+    .chord-form-group,
+    .chord-progression-field,
+    .chord-play-style,
+    .chord-action-row {
+        grid-column: auto;
+    }
+
+    .chord-preset-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .chord-section-heading > span {
+        display: none;
+    }
+
+    .play-style-btn {
+        font-size: 0.7rem;
+    }
+}

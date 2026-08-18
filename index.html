@@ -22,6 +22,9 @@
                 <button class="tab-btn" data-tab="interval-tab">
                     <i class="fas fa-arrows-alt-h"></i> 音程训练
                 </button>
+                <button class="tab-btn" data-tab="chord-tab">
+                    <i class="fas fa-layer-group"></i> 和弦进行
+                </button>
             </div>
         </header>
 
@@ -334,6 +337,92 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- 和弦进行页面 -->
+        <div class="main-content hidden chord-tab" id="chord-tab">
+            <div class="chord-workspace">
+                <section class="chord-hero">
+                    <div>
+                        <p class="eyebrow"><i class="fas fa-sparkles"></i> 流行和声练习</p>
+                        <h2>把常用和弦进行弹出来</h2>
+                        <p>以 C 大调为基准：1=C、2=Dm、3=Em、4=F、5=G、6=Am、7=Bdim。每个和弦默认同时按下，也可以切换为分解和弦。</p>
+                    </div>
+                    <div class="chord-key-badge">
+                        <span>当前调性</span>
+                        <strong>C Major</strong>
+                        <small>自然大调和弦</small>
+                    </div>
+                </section>
+
+                <section class="chord-controls-card">
+                    <div class="chord-form-group chord-progression-field">
+                        <label for="chordProgressionInput">和弦进行</label>
+                        <div class="chord-input-wrap">
+                            <i class="fas fa-music"></i>
+                            <input id="chordProgressionInput" class="form-control" type="text" value="1645" inputmode="numeric" autocomplete="off" aria-describedby="chordInputHint">
+                        </div>
+                        <small id="chordInputHint">输入 1–7，例如 1645、1625 或 4536251；空格和连字符均可。</small>
+                    </div>
+
+                    <div class="chord-form-group">
+                        <label for="chordLevelInput">根音 Level</label>
+                        <input id="chordLevelInput" class="form-control" type="number" value="4" min="1" max="7">
+                    </div>
+
+                    <div class="chord-form-group">
+                        <label for="chordDurationInput">每个和弦 (ms)</label>
+                        <input id="chordDurationInput" class="form-control" type="number" value="900" min="300" step="100">
+                    </div>
+
+                    <div class="chord-form-group chord-play-style">
+                        <label>播放方式</label>
+                        <div class="segmented-control" role="group" aria-label="和弦播放方式">
+                            <button type="button" class="play-style-btn active" data-chord-mode="simultaneous"><i class="fas fa-bars-staggered"></i> 同时按下</button>
+                            <button type="button" class="play-style-btn" data-chord-mode="arpeggio"><i class="fas fa-wave-square"></i> 分解和弦</button>
+                        </div>
+                    </div>
+
+                    <div class="chord-action-row">
+                        <button id="playChordProgressionButton" class="btn primary chord-play-button"><i class="fas fa-play"></i> 播放进行</button>
+                        <button id="stopChordProgressionButton" class="btn secondary"><i class="fas fa-stop"></i> 停止</button>
+                    </div>
+                </section>
+
+                <section class="chord-presets-card">
+                    <div class="chord-section-heading">
+                        <div>
+                            <p class="eyebrow">快速开始</p>
+                            <h3>常见套路</h3>
+                        </div>
+                        <span>点选后可直接播放</span>
+                    </div>
+                    <div class="chord-preset-grid">
+                        <button type="button" class="chord-preset active" data-progression="1645"><span class="preset-number">1645</span><span>经典流行</span></button>
+                        <button type="button" class="chord-preset" data-progression="1625"><span class="preset-number">1625</span><span>抒情循环</span></button>
+                        <button type="button" class="chord-preset" data-progression="4536251"><span class="preset-number">4536251</span><span>流行推进</span></button>
+                        <button type="button" class="chord-preset" data-progression="6415"><span class="preset-number">6415</span><span>小调色彩</span></button>
+                        <button type="button" class="chord-preset" data-progression="1564"><span class="preset-number">1564</span><span>明亮回归</span></button>
+                        <button type="button" class="chord-preset" data-progression="2516"><span class="preset-number">2516</span><span>温柔连接</span></button>
+                    </div>
+                </section>
+
+                <section class="chord-preview-card">
+                    <div class="chord-section-heading">
+                        <div>
+                            <p class="eyebrow">预览</p>
+                            <h3>进行中的和弦</h3>
+                        </div>
+                        <span>点击单个和弦可试听</span>
+                    </div>
+                    <div id="chordPreview" class="chord-preview" aria-live="polite"></div>
+                    <div id="chordPlayingInfo" class="chord-playing-info">
+                        <i class="fas fa-headphones"></i>
+                        <span id="chordPlayingContent">选择一个进行开始练习</span>
+                    </div>
+                    <div id="chordStatusText" class="chord-status-text" aria-live="polite"></div>
+                </section>
             </div>
         </div>
 

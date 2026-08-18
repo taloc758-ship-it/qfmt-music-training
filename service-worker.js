@@ -1,6 +1,6 @@
 /* PWA service worker for offline support */
 
-const CACHE_VERSION = 'qfmt-v8';
+const CACHE_VERSION = 'qfmt-v9';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const APP_BASE_URL = self.registration.scope;

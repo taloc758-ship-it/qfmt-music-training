@@ -93,6 +93,25 @@ const randomSeqLenInput = document.getElementById('randomSeqLen');
 const randomSeqButton = document.getElementById('randomSeqButton');
 const playRandomSeqButton = document.getElementById('playRandomSeqButton');
 const randomSeqDisplay = document.getElementById('randomSeqDisplay');
+const chordProgressionInput = document.getElementById('chordProgressionInput');
+const chordLevelInput = document.getElementById('chordLevelInput');
+const chordDurationInput = document.getElementById('chordDurationInput');
+const chordPreview = document.getElementById('chordPreview');
+const chordPlayingContent = document.getElementById('chordPlayingContent');
+const chordStatusText = document.getElementById('chordStatusText');
+let chordPlaybackMode = 'simultaneous';
+let chordPlaybackTimers = [];
+let chordPlaybackToken = 0;
+
+const CHORD_DEFINITIONS = {
+    1: { symbol: 'C', quality: '大三和弦', notes: [{ note: '1', offset: 0 }, { note: '3', offset: 0 }, { note: '5', offset: 0 }] },
+    2: { symbol: 'Dm', quality: '小三和弦', notes: [{ note: '2', offset: 0 }, { note: '4', offset: 0 }, { note: '6', offset: 0 }] },
+    3: { symbol: 'Em', quality: '小三和弦', notes: [{ note: '3', offset: 0 }, { note: '5', offset: 0 }, { note: '7', offset: 0 }] },
+    4: { symbol: 'F', quality: '大三和弦', notes: [{ note: '4', offset: 0 }, { note: '6', offset: 0 }, { note: '1', offset: 1 }] },
+    5: { symbol: 'G', quality: '大三和弦', notes: [{ note: '5', offset: 0 }, { note: '7', offset: 0 }, { note: '2', offset: 1 }] },
+    6: { symbol: 'Am', quality: '小三和弦', notes: [{ note: '6', offset: 0 }, { note: '1', offset: 1 }, { note: '3', offset: 1 }] },
+    7: { symbol: 'Bdim', quality: '减三和弦', notes: [{ note: '7', offset: 0 }, { note: '2', offset: 1 }, { note: '4', offset: 1 }] }
+};
 // 虚拟键盘元素
 const clearKeyInputBtn = document.getElementById('clearKeyInput');
 const playInputBtn = document.getElementById('playInputBtn');
@@ -237,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('playButton').addEventListener('click', playButtonClick);
     document.getElementById('playCombButton').addEventListener('click', playCombButtonClick);
     document.getElementById('repeatCombButton').addEventListener('click', repeatCombButtonClick);
+    initChordProgressions();
     if (randomSeqButton) randomSeqButton.addEventListener('click', randomSeqButtonClick);
     if (playRandomSeqButton) playRandomSeqButton.addEventListener('click', playRandomSeqButtonClick);
     selectAllCheckBox.addEventListener('click', selectAllCheckBoxClick);
@@ -1316,6 +1336,141 @@ function playSound(key, level) {
             showStatus('播放错误：' + error.message, 'error');
         }
     }
+}
+
+function initChordProgressions() {
+    if (!chordProgressionInput || !chordPreview) return;
+
+    document.getElementById('playChordProgressionButton')?.addEventListener('click', playChordProgression);
+    document.getElementById('stopChordProgressionButton')?.addEventListener('click', stopChordProgression);
+
+    chordProgressionInput.addEventListener('input', () => {
+        renderChordPreview();
+        document.querySelectorAll('.chord-preset').forEach(button => {
+            button.classList.toggle('active', button.dataset.progression === getChordProgression().join(''));
+        });
+    });
+
+    document.querySelectorAll('.chord-preset').forEach(button => {
+        button.addEventListener('click', () => {
+            chordProgressionInput.value = button.dataset.progression || '';
+            renderChordPreview();
+            document.querySelectorAll('.chord-preset').forEach(item => item.classList.toggle('active', item === button));
+            playChordProgression();
+        });
+    });
+
+    document.querySelectorAll('.play-style-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            chordPlaybackMode = button.dataset.chordMode === 'arpeggio' ? 'arpeggio' : 'simultaneous';
+            document.querySelectorAll('.play-style-btn').forEach(item => item.classList.toggle('active', item === button));
+        });
+    });
+
+    renderChordPreview();
+}
+
+function getChordProgression() {
+    return Array.from(String(chordProgressionInput?.value || '').matchAll(/[1-7]/g), match => Number(match[0]));
+}
+
+function showChordStatus(message, type = 'info') {
+    if (!chordStatusText) return;
+    chordStatusText.textContent = message;
+    chordStatusText.dataset.type = type;
+    clearTimeout(showChordStatus.timer);
+    showChordStatus.timer = setTimeout(() => {
+        chordStatusText.textContent = '';
+    }, 3500);
+}
+
+function renderChordPreview(activeIndex = -1) {
+    const progression = getChordProgression();
+    if (!progression.length) {
+        chordPreview.innerHTML = '<div class="chord-empty-state"><i class="fas fa-keyboard"></i><span>输入 1–7 来创建和弦进行</span></div>';
+        return;
+    }
+
+    chordPreview.innerHTML = progression.map((degree, index) => {
+        const chord = CHORD_DEFINITIONS[degree];
+        return `<button type="button" class="chord-step${index === activeIndex ? ' is-playing' : ''}" data-chord-degree="${degree}" data-chord-index="${index}">
+            <span class="chord-degree">${degree}</span>
+            <strong>${chord.symbol}</strong>
+            <small>${chord.quality}</small>
+        </button>`;
+    }).join('<span class="chord-arrow"><i class="fas fa-chevron-right"></i></span>');
+
+    chordPreview.querySelectorAll('.chord-step').forEach(button => {
+        button.addEventListener('click', () => {
+            const degree = Number(button.dataset.chordDegree);
+            playSingleChord(degree, Number(button.dataset.chordIndex));
+        });
+    });
+}
+
+function stopChordProgression() {
+    chordPlaybackToken++;
+    chordPlaybackTimers.forEach(timer => clearTimeout(timer));
+    chordPlaybackTimers = [];
+    renderChordPreview();
+    if (chordPlayingContent) chordPlayingContent.textContent = '播放已停止';
+    showChordStatus('已停止播放', 'info');
+}
+
+function playChordNotes(chord, level, mode) {
+    if (mode === 'arpeggio') {
+        chord.notes.forEach((key, index) => {
+            const timer = setTimeout(() => playSound(key.note, level + key.offset), index * 135);
+            chordPlaybackTimers.push(timer);
+        });
+        return;
+    }
+
+    chord.notes.forEach(key => playSound(key.note, level + key.offset));
+}
+
+function playSingleChord(degree, activeIndex = -1) {
+    const chord = CHORD_DEFINITIONS[degree];
+    if (!chord) return;
+    stopChordProgression();
+    const level = Math.min(7, Math.max(1, parseInt(chordLevelInput?.value) || 4));
+    renderChordPreview(activeIndex);
+    playChordNotes(chord, level, chordPlaybackMode);
+    if (chordPlayingContent) chordPlayingContent.textContent = `${degree} · ${chord.symbol}（${chord.quality}）`;
+    showChordStatus(`正在播放 ${chord.symbol}`, 'success');
+}
+
+function playChordProgression() {
+    const progression = getChordProgression();
+    if (!progression.length) {
+        showChordStatus('请输入由 1–7 组成的和弦进行', 'error');
+        return;
+    }
+
+    stopChordProgression();
+    const token = chordPlaybackToken;
+    const level = Math.min(7, Math.max(1, parseInt(chordLevelInput?.value) || 4));
+    const duration = Math.max(300, parseInt(chordDurationInput?.value) || 900);
+
+    progression.forEach((degree, index) => {
+        const timer = setTimeout(() => {
+            if (token !== chordPlaybackToken) return;
+            const chord = CHORD_DEFINITIONS[degree];
+            renderChordPreview(index);
+            playChordNotes(chord, level, chordPlaybackMode);
+            if (chordPlayingContent) chordPlayingContent.textContent = `${index + 1} / ${progression.length} · ${degree} = ${chord.symbol}`;
+        }, index * duration);
+        chordPlaybackTimers.push(timer);
+    });
+
+    const finishTimer = setTimeout(() => {
+        if (token !== chordPlaybackToken) return;
+        renderChordPreview();
+        if (chordPlayingContent) chordPlayingContent.textContent = `完成 · ${progression.join(' → ')}`;
+        showChordStatus(`已完成 ${progression.join(' → ')} 进行`, 'success');
+    }, progression.length * duration);
+    chordPlaybackTimers.push(finishTimer);
+    showChordStatus(`开始播放 ${progression.join(' → ')}`, 'success');
 }
 
 // Parse a string to get notes and offsets
