@@ -107,8 +107,9 @@ const CHORD_DEFINITIONS = {
     1: { symbol: 'C', quality: '大三和弦', notes: [{ note: '1', offset: 0 }, { note: '3', offset: 0 }, { note: '5', offset: 0 }] },
     2: { symbol: 'Dm', quality: '小三和弦', notes: [{ note: '2', offset: 0 }, { note: '4', offset: 0 }, { note: '6', offset: 0 }] },
     3: { symbol: 'Em', quality: '小三和弦', notes: [{ note: '3', offset: 0 }, { note: '5', offset: 0 }, { note: '7', offset: 0 }] },
-    4: { symbol: 'F', quality: '大三和弦', notes: [{ note: '4', offset: 0 }, { note: '6', offset: 0 }, { note: '1', offset: 1 }] },
-    5: { symbol: 'G', quality: '大三和弦', notes: [{ note: '5', offset: 0 }, { note: '7', offset: 0 }, { note: '2', offset: 1 }] },
+    // Common pop bass voicing: F3-A3-C4 and G3-B3-D4 when level is 4.
+    4: { symbol: 'F', quality: '大三和弦', notes: [{ note: '4', offset: -1 }, { note: '6', offset: -1 }, { note: '1', offset: 0 }] },
+    5: { symbol: 'G', quality: '大三和弦', notes: [{ note: '5', offset: -1 }, { note: '7', offset: -1 }, { note: '2', offset: 0 }] },
     // The 6 chord uses the common low-bass voicing: A3-C4-E4 when level is 4.
     6: { symbol: 'Am', quality: '小三和弦 · 低音6', notes: [{ note: '6', offset: -1 }, { note: '1', offset: 0 }, { note: '3', offset: 0 }] },
     7: { symbol: 'Bdim', quality: '减三和弦', notes: [{ note: '7', offset: 0 }, { note: '2', offset: 1 }, { note: '4', offset: 1 }] }
