@@ -1424,6 +1424,35 @@ input:checked + .slider:before {
     align-items: start;
 }
 
+.chord-toolbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+    padding: 0.2rem 0.15rem;
+}
+
+.chord-toolbar .eyebrow {
+    margin-bottom: 0.15rem;
+    color: #687895;
+}
+
+.chord-toolbar h2 {
+    color: #2d3b59;
+    font-size: 1.35rem;
+    line-height: 1.2;
+}
+
+.chord-key-note {
+    max-width: 42rem;
+    color: #8390a7;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    text-align: right;
+}
+
 .chord-hero {
     grid-column: 1 / -1;
     position: relative;
@@ -1859,12 +1888,25 @@ input:checked + .slider:before {
     }
 
     .chord-hero,
+    .chord-toolbar,
     .chord-controls-card,
     .chord-presets-card,
     .chord-preview-card {
         width: 100%;
         max-width: 100%;
         grid-column: auto;
+    }
+
+    .chord-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.1rem 0;
+    }
+
+    .chord-key-note {
+        max-width: none;
+        text-align: left;
     }
 
     .chord-hero {
