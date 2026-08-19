@@ -356,9 +356,9 @@
                         <label for="chordProgressionInput">和弦进行</label>
                         <div class="chord-input-wrap">
                             <i class="fas fa-music"></i>
-                            <input id="chordProgressionInput" class="form-control" type="text" value="1645" inputmode="numeric" autocomplete="off" aria-describedby="chordInputHint">
+                            <input id="chordProgressionInput" class="form-control" type="text" value="1645" inputmode="text" autocomplete="off" placeholder="例如：1645 或 1maj7 6m7 2m7 5dom7" aria-describedby="chordInputHint">
                         </div>
-                        <small id="chordInputHint">输入 1–7，例如 1645、1625 或 4536251；空格和连字符均可。</small>
+                        <small id="chordInputHint">数字可连写；复杂和弦请用空格，例如 1maj7 6m7 2m7 5dom7，也支持 1/3 转位。</small>
                     </div>
 
                     <div class="chord-form-group">
@@ -401,6 +401,14 @@
                         <button type="button" class="chord-preset" data-progression="1564"><span class="preset-number">1564</span><span>明亮回归</span></button>
                         <button type="button" class="chord-preset" data-progression="2516"><span class="preset-number">2516</span><span>温柔连接</span></button>
                     </div>
+                    <div class="custom-preset-editor">
+                        <label for="chordPresetNameInput">保存当前套路</label>
+                        <div class="custom-preset-input-row">
+                            <input id="chordPresetNameInput" class="form-control" type="text" placeholder="名称，例如：我的副歌" maxlength="32">
+                            <button id="saveChordPresetButton" type="button" class="btn secondary"><i class="fas fa-bookmark"></i> 保存</button>
+                        </div>
+                    </div>
+                    <div id="customChordPresetList" class="custom-chord-preset-list" aria-live="polite"></div>
                 </section>
 
                 <section class="chord-preview-card">

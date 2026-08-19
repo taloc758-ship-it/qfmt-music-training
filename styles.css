@@ -1877,6 +1877,144 @@ input:checked + .slider:before {
     color: var(--success-color);
 }
 
+.custom-preset-editor {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #edf0f6;
+}
+
+.custom-preset-editor > label {
+    display: block;
+    margin-bottom: 0.42rem;
+    color: #344260;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.custom-preset-input-row {
+    display: flex;
+    gap: 0.55rem;
+}
+
+.custom-preset-input-row .form-control {
+    min-width: 0;
+    min-height: 40px;
+}
+
+.custom-preset-input-row .btn {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding-inline: 0.85rem;
+    border-radius: 10px;
+}
+
+.custom-chord-preset-list {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+}
+
+.custom-preset-list-heading {
+    color: #8290a7;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.custom-chord-preset {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    border: 1px solid #e1e6f0;
+    border-radius: 10px;
+    background: #fbfcff;
+    overflow: hidden;
+}
+
+.custom-chord-preset-play {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-width: 0;
+    gap: 0.65rem;
+    padding: 0.58rem 0.7rem;
+    border: 0;
+    color: #40527e;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.custom-chord-preset-play > i {
+    display: grid;
+    flex: 0 0 28px;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #536bda;
+    background: #eef1ff;
+    font-size: 0.68rem;
+}
+
+.custom-chord-preset-play > span {
+    display: grid;
+    min-width: 0;
+    gap: 0.12rem;
+}
+
+.custom-preset-name,
+.custom-chord-preset-play small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-preset-name {
+    color: #344260;
+    font-size: 0.78rem;
+}
+
+.custom-chord-preset-play small {
+    color: #8a97ab;
+    font-size: 0.68rem;
+}
+
+.custom-chord-preset-play:hover {
+    background: #f4f6ff;
+}
+
+.custom-chord-preset-delete {
+    flex: 0 0 38px;
+    border: 0;
+    border-left: 1px solid #e8ebf2;
+    color: #a7b0c0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.custom-chord-preset-delete:hover {
+    color: #d65d73;
+    background: #fff4f6;
+}
+
+.chord-error-state {
+    border-color: #f2c6ce;
+    color: #c85c6d;
+    background: #fff8f9;
+    cursor: default;
+}
+
+.chord-error-state strong {
+    color: #c85c6d;
+    font-size: 0.78rem;
+}
+
+.chord-error-state small {
+    color: #d27a87;
+}
+
 @media (max-width: 800px) {
     #chord-tab.main-content {
         padding: 0.75rem;
@@ -1957,6 +2095,15 @@ input:checked + .slider:before {
 
     .chord-section-heading > span {
         display: none;
+    }
+
+    .custom-preset-input-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .custom-preset-input-row .btn {
+        width: 100%;
     }
 
     .play-style-btn {

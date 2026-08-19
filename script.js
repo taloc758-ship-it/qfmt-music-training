@@ -99,21 +99,61 @@ const chordDurationInput = document.getElementById('chordDurationInput');
 const chordPreview = document.getElementById('chordPreview');
 const chordPlayingContent = document.getElementById('chordPlayingContent');
 const chordStatusText = document.getElementById('chordStatusText');
+const chordPresetNameInput = document.getElementById('chordPresetNameInput');
+const saveChordPresetButton = document.getElementById('saveChordPresetButton');
+const customChordPresetList = document.getElementById('customChordPresetList');
 let chordPlaybackMode = 'simultaneous';
 let chordPlaybackTimers = [];
 let chordPlaybackToken = 0;
+let customChordPresets = [];
 
-const CHORD_DEFINITIONS = {
-    1: { symbol: 'C', quality: '大三和弦', notes: [{ note: '1', offset: 0 }, { note: '3', offset: 0 }, { note: '5', offset: 0 }] },
-    2: { symbol: 'Dm', quality: '小三和弦', notes: [{ note: '2', offset: 0 }, { note: '4', offset: 0 }, { note: '6', offset: 0 }] },
-    3: { symbol: 'Em', quality: '小三和弦', notes: [{ note: '3', offset: 0 }, { note: '5', offset: 0 }, { note: '7', offset: 0 }] },
-    // Common pop bass voicing: F3-A3-C4 and G3-B3-D4 when level is 4.
-    4: { symbol: 'F', quality: '大三和弦', notes: [{ note: '4', offset: -1 }, { note: '6', offset: -1 }, { note: '1', offset: 0 }] },
-    5: { symbol: 'G', quality: '大三和弦', notes: [{ note: '5', offset: -1 }, { note: '7', offset: -1 }, { note: '2', offset: 0 }] },
-    // The 6 chord uses the common low-bass voicing: A3-C4-E4 when level is 4.
-    6: { symbol: 'Am', quality: '小三和弦 · 低音6', notes: [{ note: '6', offset: -1 }, { note: '1', offset: 0 }, { note: '3', offset: 0 }] },
-    7: { symbol: 'Bdim', quality: '减三和弦', notes: [{ note: '7', offset: 0 }, { note: '2', offset: 1 }, { note: '4', offset: 1 }] }
-};
+const CHORD_PRESETS_STORAGE_KEY = 'qfmt.chordPresets.v1';
+const CHORD_SCALE_PITCHES = Object.freeze({ 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 });
+const CHORD_SCALE_NAMES = Object.freeze({ 1: 'C', 2: 'D', 3: 'E', 4: 'F', 5: 'G', 6: 'A', 7: 'B' });
+const CHORD_ROOT_OFFSETS = Object.freeze({ 1: 0, 2: 0, 3: 0, 4: -1, 5: -1, 6: -1, 7: 0 });
+const DEFAULT_DIATONIC_CHORD_QUALITIES = Object.freeze({ 1: 'major', 2: 'minor', 3: 'minor', 4: 'major', 5: 'major', 6: 'minor', 7: 'dim' });
+const PITCH_CLASS_NAMES = Object.freeze(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']);
+
+const CHORD_QUALITY_DEFINITIONS = Object.freeze({
+    major: { suffix: '', label: '大三和弦', intervals: [0, 4, 7] },
+    minor: { suffix: 'm', label: '小三和弦', intervals: [0, 3, 7] },
+    maj7: { suffix: 'maj7', label: '大七和弦', intervals: [0, 4, 7, 11] },
+    m7: { suffix: 'm7', label: '小七和弦', intervals: [0, 3, 7, 10] },
+    dom7: { suffix: '7', label: '属七和弦', intervals: [0, 4, 7, 10] },
+    sus2: { suffix: 'sus2', label: '挂二和弦', intervals: [0, 2, 7] },
+    sus4: { suffix: 'sus4', label: '挂四和弦', intervals: [0, 5, 7] },
+    add9: { suffix: 'add9', label: '加九和弦', intervals: [0, 4, 7, 14] },
+    madd9: { suffix: 'madd9', label: '小加九和弦', intervals: [0, 3, 7, 14] },
+    dim: { suffix: 'dim', label: '减三和弦', intervals: [0, 3, 6] },
+    dim7: { suffix: 'dim7', label: '减七和弦', intervals: [0, 3, 6, 9] },
+    aug: { suffix: 'aug', label: '增三和弦', intervals: [0, 4, 8] },
+    dom7sus4: { suffix: '7sus4', label: '属七挂四', intervals: [0, 5, 7, 10] },
+    maj9: { suffix: 'maj9', label: '大九和弦', intervals: [0, 4, 7, 11, 14] },
+    m9: { suffix: 'm9', label: '小九和弦', intervals: [0, 3, 7, 10, 14] },
+    dom9: { suffix: '9', label: '属九和弦', intervals: [0, 4, 7, 10, 14] },
+    mmaj7: { suffix: 'mMaj7', label: '小大七和弦', intervals: [0, 3, 7, 11] }
+});
+
+const CHORD_QUALITY_ALIASES = Object.freeze({
+    '': 'major', major: 'major', maj: 'major',
+    m: 'minor', min: 'minor', minor: 'minor',
+    maj7: 'maj7', major7: 'maj7',
+    mmaj7: 'mmaj7', minmaj7: 'mmaj7', minormaj7: 'mmaj7',
+    m7: 'm7', min7: 'm7', minor7: 'm7',
+    '7': 'dom7', dom7: 'dom7', dominant7: 'dom7',
+    sus2: 'sus2', sus4: 'sus4',
+    add9: 'add9', madd9: 'madd9',
+    dim: 'dim', dim7: 'dim7', aug: 'aug',
+    '7sus4': 'dom7sus4',
+    '9': 'dom9', maj9: 'maj9', m9: 'm9', min9: 'm9'
+});
+
+const PITCH_CLASSES_BY_NAME = Object.freeze({
+    C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4,
+    F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9,
+    'A#': 10, Bb: 10, B: 11
+});
+
 // 虚拟键盘元素
 const clearKeyInputBtn = document.getElementById('clearKeyInput');
 const playInputBtn = document.getElementById('playInputBtn');
@@ -1348,9 +1388,7 @@ function initChordProgressions() {
 
     chordProgressionInput.addEventListener('input', () => {
         renderChordPreview();
-        document.querySelectorAll('.chord-preset').forEach(button => {
-            button.classList.toggle('active', button.dataset.progression === getChordProgression().join(''));
-        });
+        updateChordPresetSelection();
     });
 
     document.querySelectorAll('.chord-preset').forEach(button => {
@@ -1369,11 +1407,96 @@ function initChordProgressions() {
         });
     });
 
+    saveChordPresetButton?.addEventListener('click', saveCustomChordPreset);
+    loadCustomChordPresets();
     renderChordPreview();
+    updateChordPresetSelection();
+}
+
+function tokenizeChordProgression(input) {
+    const value = String(input || '').trim();
+    if (!value) return [];
+    if (/^[1-7]+$/.test(value)) return value.split('');
+    return value.split(/[\s,，、→>\-]+/).map(token => token.trim()).filter(Boolean);
+}
+
+function parseChordRoot(value) {
+    const root = String(value || '').trim();
+    if (/^[1-7]$/.test(root)) {
+        const degree = Number(root);
+        return { degree, pitchClass: CHORD_SCALE_PITCHES[degree], symbol: CHORD_SCALE_NAMES[degree] };
+    }
+    const pitchClass = PITCH_CLASSES_BY_NAME[root[0]?.toUpperCase() + (root.slice(1) || '')];
+    if (pitchClass === undefined) return null;
+    return { degree: null, pitchClass, symbol: root[0].toUpperCase() + root.slice(1) };
+}
+
+function parseChordToken(token) {
+    const raw = String(token || '').trim();
+    const match = raw.match(/^([1-7]|[A-Ga-g](?:#|b)?)([A-Za-z]*\d*|\d+)?(?:\/([1-7]|[A-Ga-g](?:#|b)?))?$/i);
+    if (!match) return null;
+
+    const root = parseChordRoot(match[1]);
+    if (!root) return null;
+    const qualityText = (match[2] || '').toLowerCase();
+    const qualityKey = qualityText
+        ? CHORD_QUALITY_ALIASES[qualityText]
+        : (root.degree ? DEFAULT_DIATONIC_CHORD_QUALITIES[root.degree] : 'major');
+    if (!qualityKey) return null;
+    const definition = CHORD_QUALITY_DEFINITIONS[qualityKey];
+    const bass = match[3] ? parseChordRoot(match[3]) : null;
+    if (match[3] && !bass) return null;
+    const rootLabel = root.symbol;
+    const slashLabel = bass ? `/${bass.symbol}` : '';
+    const canonicalRoot = root.degree || root.symbol;
+    return {
+        input: raw,
+        root,
+        bass,
+        quality: qualityKey,
+        qualityLabel: definition.label,
+        intervals: definition.intervals,
+        symbol: `${rootLabel}${definition.suffix}${slashLabel}`,
+        canonicalToken: `${canonicalRoot}${qualityKey === 'dom7' ? 'dom7' : qualityKey === 'dom9' ? 'dom9' : definition.suffix}${bass ? `/${bass.degree || bass.symbol}` : ''}`
+    };
 }
 
 function getChordProgression() {
-    return Array.from(String(chordProgressionInput?.value || '').matchAll(/[1-7]/g), match => Number(match[0]));
+    return tokenizeChordProgression(chordProgressionInput?.value).map(parseChordToken);
+}
+
+function updateChordPresetSelection() {
+    const current = String(chordProgressionInput?.value || '').trim().replace(/\s+/g, ' ');
+    document.querySelectorAll('.chord-preset').forEach(button => {
+        const preset = String(button.dataset.progression || '').trim();
+        button.classList.toggle('active', current === preset);
+    });
+}
+
+function createChordTones(chord) {
+    const rootOffset = chord.root.degree ? (CHORD_ROOT_OFFSETS[chord.root.degree] || 0) : 0;
+    const tones = chord.intervals.map(interval => {
+        const absolute = chord.root.pitchClass + interval;
+        return {
+            pitchClass: absolute % 12,
+            octaveOffset: rootOffset + Math.floor(absolute / 12),
+            absolute: absolute + rootOffset * 12
+        };
+    });
+
+    if (chord.bass) {
+        const bassOffset = chord.bass.degree ? (CHORD_ROOT_OFFSETS[chord.bass.degree] || 0) : 0;
+        let bassAbsolute = chord.bass.pitchClass + bassOffset * 12;
+        const lowest = Math.min(...tones.map(tone => tone.absolute));
+        while (bassAbsolute >= lowest) bassAbsolute -= 12;
+        tones.unshift({
+            pitchClass: chord.bass.pitchClass,
+            octaveOffset: Math.floor(bassAbsolute / 12),
+            absolute: bassAbsolute,
+            isBass: true
+        });
+    }
+    return tones;
 }
 
 function showChordStatus(message, type = 'info') {
@@ -1393,19 +1516,19 @@ function renderChordPreview(activeIndex = -1) {
         return;
     }
 
-    chordPreview.innerHTML = progression.map((degree, index) => {
-        const chord = CHORD_DEFINITIONS[degree];
-        return `<button type="button" class="chord-step${index === activeIndex ? ' is-playing' : ''}" data-chord-degree="${degree}" data-chord-index="${index}">
-            <span class="chord-degree">${degree}</span>
-            <strong>${chord.symbol}</strong>
-            <small>${chord.quality}</small>
+    chordPreview.innerHTML = progression.map((chord, index) => {
+        if (!chord) return `<div class="chord-step chord-error-state"><span>?</span><strong>无法识别</strong><small>${escapeHtml(tokenizeChordProgression(chordProgressionInput.value)[index])}</small></div>`;
+        return `<button type="button" class="chord-step${index === activeIndex ? ' is-playing' : ''}" data-chord-index="${index}">
+            <span class="chord-degree">${escapeHtml(chord.input)}</span>
+            <strong>${escapeHtml(chord.symbol)}</strong>
+            <small>${escapeHtml(chord.qualityLabel)}</small>
         </button>`;
     }).join('<span class="chord-arrow"><i class="fas fa-chevron-right"></i></span>');
 
     chordPreview.querySelectorAll('.chord-step').forEach(button => {
         button.addEventListener('click', () => {
-            const degree = Number(button.dataset.chordDegree);
-            playSingleChord(degree, Number(button.dataset.chordIndex));
+            const index = Number(button.dataset.chordIndex);
+            if (progression[index]) playSingleChord(progression[index], index);
         });
     });
 }
@@ -1419,33 +1542,40 @@ function stopChordProgression() {
     showChordStatus('已停止播放', 'info');
 }
 
+function playChordTone(tone, level) {
+    const pitchName = PITCH_CLASS_NAMES[tone.pitchClass];
+    const octave = level + tone.octaveOffset;
+    const fileName = pitchName.endsWith('b') ? `${pitchName[0]}${octave}b` : `${pitchName}${octave}`;
+    playBuffer(`${basePath}${fileName}.mp3`);
+}
+
 function playChordNotes(chord, level, mode) {
+    const tones = createChordTones(chord);
     if (mode === 'arpeggio') {
-        chord.notes.forEach((key, index) => {
-            const timer = setTimeout(() => playSound(key.note, level + key.offset), index * 135);
+        tones.forEach((tone, index) => {
+            const timer = setTimeout(() => playChordTone(tone, level), index * 135);
             chordPlaybackTimers.push(timer);
         });
         return;
     }
 
-    chord.notes.forEach(key => playSound(key.note, level + key.offset));
+    tones.forEach(tone => playChordTone(tone, level));
 }
 
-function playSingleChord(degree, activeIndex = -1) {
-    const chord = CHORD_DEFINITIONS[degree];
+function playSingleChord(chord, activeIndex = -1) {
     if (!chord) return;
     stopChordProgression();
     const level = Math.min(7, Math.max(1, parseInt(chordLevelInput?.value) || 4));
     renderChordPreview(activeIndex);
     playChordNotes(chord, level, chordPlaybackMode);
-    if (chordPlayingContent) chordPlayingContent.textContent = `${degree} · ${chord.symbol}（${chord.quality}）`;
+    if (chordPlayingContent) chordPlayingContent.textContent = `${chord.input} · ${chord.symbol}（${chord.qualityLabel}）`;
     showChordStatus(`正在播放 ${chord.symbol}`, 'success');
 }
 
 function playChordProgression() {
     const progression = getChordProgression();
-    if (!progression.length) {
-        showChordStatus('请输入由 1–7 组成的和弦进行', 'error');
+    if (!progression.length || progression.some(chord => !chord)) {
+        showChordStatus('请输入有效和弦，例如 1645 或 1maj7 6m7 2m7 5dom7', 'error');
         return;
     }
 
@@ -1454,13 +1584,12 @@ function playChordProgression() {
     const level = Math.min(7, Math.max(1, parseInt(chordLevelInput?.value) || 4));
     const duration = Math.max(300, parseInt(chordDurationInput?.value) || 900);
 
-    progression.forEach((degree, index) => {
+    progression.forEach((chord, index) => {
         const timer = setTimeout(() => {
             if (token !== chordPlaybackToken) return;
-            const chord = CHORD_DEFINITIONS[degree];
             renderChordPreview(index);
             playChordNotes(chord, level, chordPlaybackMode);
-            if (chordPlayingContent) chordPlayingContent.textContent = `${index + 1} / ${progression.length} · ${degree} = ${chord.symbol}`;
+            if (chordPlayingContent) chordPlayingContent.textContent = `${index + 1} / ${progression.length} · ${chord.symbol}`;
         }, index * duration);
         chordPlaybackTimers.push(timer);
     });
@@ -1468,11 +1597,73 @@ function playChordProgression() {
     const finishTimer = setTimeout(() => {
         if (token !== chordPlaybackToken) return;
         renderChordPreview();
-        if (chordPlayingContent) chordPlayingContent.textContent = `完成 · ${progression.join(' → ')}`;
-        showChordStatus(`已完成 ${progression.join(' → ')} 进行`, 'success');
+        const labels = progression.map(chord => chord.symbol).join(' → ');
+        if (chordPlayingContent) chordPlayingContent.textContent = `完成 · ${labels}`;
+        showChordStatus(`已完成 ${labels} 进行`, 'success');
     }, progression.length * duration);
     chordPlaybackTimers.push(finishTimer);
-    showChordStatus(`开始播放 ${progression.join(' → ')}`, 'success');
+    showChordStatus(`开始播放 ${progression.map(chord => chord.symbol).join(' → ')}`, 'success');
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+}
+
+function loadCustomChordPresets() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(CHORD_PRESETS_STORAGE_KEY) || '[]');
+        customChordPresets = Array.isArray(stored) ? stored.filter(item => item && item.name && item.progression) : [];
+    } catch {
+        customChordPresets = [];
+    }
+    renderCustomChordPresets();
+}
+
+function persistCustomChordPresets() {
+    localStorage.setItem(CHORD_PRESETS_STORAGE_KEY, JSON.stringify(customChordPresets));
+}
+
+function saveCustomChordPreset() {
+    const progression = tokenizeChordProgression(chordProgressionInput?.value);
+    const parsed = progression.map(parseChordToken);
+    if (!progression.length || parsed.some(chord => !chord)) {
+        showChordStatus('请先输入有效的和弦进行再保存', 'error');
+        return;
+    }
+    const name = String(chordPresetNameInput?.value || '').trim() || `自定义套路 ${customChordPresets.length + 1}`;
+    customChordPresets = [{ id: Date.now().toString(36), name, progression: parsed.map(chord => chord.canonicalToken).join(' ') }, ...customChordPresets].slice(0, 30);
+    persistCustomChordPresets();
+    renderCustomChordPresets();
+    if (chordPresetNameInput) chordPresetNameInput.value = '';
+    showChordStatus(`已保存“${name}”`, 'success');
+}
+
+function renderCustomChordPresets() {
+    if (!customChordPresetList) return;
+    if (!customChordPresets.length) {
+        customChordPresetList.innerHTML = '';
+        return;
+    }
+    customChordPresetList.innerHTML = `<div class="custom-preset-list-heading">我的套路</div>${customChordPresets.map(preset => `<div class="custom-chord-preset" data-preset-id="${escapeHtml(preset.id)}">
+        <button type="button" class="custom-chord-preset-play" data-action="play"><i class="fas fa-play"></i><span><strong class="custom-preset-name">${escapeHtml(preset.name)}</strong><small>${escapeHtml(preset.progression)}</small></span></button>
+        <button type="button" class="custom-chord-preset-delete" data-action="delete" aria-label="删除 ${escapeHtml(preset.name)}" title="删除"><i class="fas fa-trash"></i></button>
+    </div>`).join('')}`;
+    customChordPresetList.querySelectorAll('.custom-chord-preset').forEach(item => {
+        const preset = customChordPresets.find(entry => entry.id === item.dataset.presetId);
+        item.querySelector('[data-action="play"]')?.addEventListener('click', () => {
+            if (!preset) return;
+            chordProgressionInput.value = preset.progression;
+            renderChordPreview();
+            updateChordPresetSelection();
+            playChordProgression();
+        });
+        item.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
+            customChordPresets = customChordPresets.filter(entry => entry.id !== item.dataset.presetId);
+            persistCustomChordPresets();
+            renderCustomChordPresets();
+            showChordStatus('已删除自定义套路', 'info');
+        });
+    });
 }
 
 // Parse a string to get notes and offsets
