@@ -1824,7 +1824,9 @@ input:checked + .slider:before {
     margin-top: 0.18rem;
     color: #8390a5;
     font-size: 0.65rem;
-    white-space: nowrap;
+    min-height: 1.6em;
+    line-height: 1.2;
+    text-align: center;
 }
 
 .chord-arrow {
